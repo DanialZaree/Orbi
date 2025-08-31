@@ -11,7 +11,7 @@ const contentBlockSchema = new mongoose.Schema({
     type: String,
     required: true // The actual text, code, or image URL
   },
-  language: {
+  language: { 
     type: String, // Optional: for syntax highlighting, e.g., 'javascript'
     required: false
   }
@@ -34,12 +34,13 @@ const messageSchema = new mongoose.Schema({
 }, { _id: false });
 
 
-// The main chat schema remains largely the same
+// The main chat schema with the performance index added
 const chatSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true // <-- **This is the added line**
   },
   title: {
     type: String,
