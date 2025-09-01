@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Regular.woff2") format("woff2");
+  font-weight: 400; /* 400 is the numeric value for 'normal' weight */
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Define the 'bold' weight for the same Satoshi font family */
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Bold.woff2") format("woff2");
+  font-weight: 700; /* 700 is the numeric value for 'bold' weight */
+  font-style: normal;
+  font-display: swap;
+}
+@theme {
+  --font-sans: "Satoshi", sans-serif;
+  --color-dark-bg: #111418;
+  --color-dark-secondary-bg: #1a1d21;
+  --color-secondary-text: #9cabba;
+  --color-border-color: #283039;
+  --color-hover-bg: #283039;
+}
