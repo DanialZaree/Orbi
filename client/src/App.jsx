@@ -10,24 +10,22 @@ function App() {
   const { authToken } = useAuth();
 
   return (
-    <div className="flex h-screen bg-gray-800 text-white relative">
+    <div className="flex h-screen bg-dark-bg   text-white relative font-sans">
       {/* Conditionally render Sidebar and Profile (as ChatInterface) */}
       {authToken && <ChatInterface />}
 
       {/* Main content area that is always visible */}
-      <main className="flex-1 flex flex-col items-center">
+      <main className="flex-1 flex flex-col items-center font-sans">
         {/* Conditionally render Login Button */}
         {!authToken && <LoginView />}
 
         {/* The Welcome message is always in the center */}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center font-sans">
           <Welcome />
         </div>
 
-        {/* The Chat Input is always at the bottom */}
-        <div className="w-full p-4">
-          <ChatInput onSendMessage={() => {}} disabled={!authToken} />
-        </div>
+        {/* The Chat Input is always at the bottom */}        
+          <ChatInput />
       </main>
     </div>
   );
