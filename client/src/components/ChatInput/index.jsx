@@ -112,7 +112,7 @@ export default function ChatInput() {
       <div className="max-w-3xl mx-auto px-4">
         <div
           onPaste={handlePaste}
-          className="flex flex-col gap-2 rounded-2xl p-2 border-2 border-border-color bg-dark-secondary-bg"
+          className="flex flex-col gap-2 rounded-2xl p-2 border-2 border-border-color bg-dark-secondary-bg shadow-[0px_4px_10px_0px] shadow-blue-600/10"
         >
           <div
             className={`flex flex-col rounded-2xl p-2 ${
