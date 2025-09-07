@@ -100,7 +100,7 @@ export default function ChatInput() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-8 w-8 text-gray-400 flex-shrink-0"
+      className="flex-shrink-0 w-8 h-8 text-gray-400"
     >
       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
       <polyline points="14 2 14 8 20 8"></polyline>
@@ -108,8 +108,8 @@ export default function ChatInput() {
   );
 
   return (
-    <footer className="w-full bottom-0 py-4 sticky">
-      <div className="max-w-3xl mx-auto px-4">
+    <footer className="sticky bottom-0 w-full py-4">
+      <div className="max-w-3xl px-4 mx-auto">
         <div
           onPaste={handlePaste}
           className="flex flex-col gap-2 rounded-2xl p-2 border-2 border-border-color bg-dark-secondary-bg shadow-[0px_4px_10px_0px] shadow-blue-600/10"
@@ -124,14 +124,14 @@ export default function ChatInput() {
                 {files.map((fileWrapper, index) => (
                   <div
                     key={`${fileWrapper.file.name}-${index}`}
-                    className="relative group w-16 h-16 rounded-lg overflow-hidden"
+                    className="relative w-16 h-16 overflow-hidden rounded-lg group"
                   >
                     {fileWrapper.preview &&
                       fileWrapper.file.type.startsWith("image/") && (
                         <img
                           src={fileWrapper.preview}
                           alt={fileWrapper.file.name}
-                          className="w-full h-full object-cover"
+                          className="object-cover w-full h-full"
                         />
                       )}
                     {fileWrapper.preview &&
@@ -140,20 +140,20 @@ export default function ChatInput() {
                           src={fileWrapper.preview}
                           muted
                           playsInline
-                          className="w-full h-full object-cover"
+                          className="object-cover w-full h-full"
                         />
                       )}
                     {!fileWrapper.preview && (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-1">
+                      <div className="flex flex-col items-center justify-center w-full h-full p-1">
                         {FileIcon}
-                        <span className="text-white text-xs text-center break-all leading-tight mt-2 w-full px-1 truncate">
+                        <span className="w-full px-1 mt-2 text-xs leading-tight text-center text-white break-all truncate">
                           {fileWrapper.file.name}
                         </span>
                       </div>
                     )}
                     <button
                       onClick={() => handleRemoveFile(index)}
-                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                      className="absolute z-10 p-1 text-white transition-opacity duration-200 rounded-full opacity-0 top-1 right-1 bg-black/50 group-hover:opacity-100"
                       aria-label="Remove file"
                     >
                       <svg
@@ -177,7 +177,7 @@ export default function ChatInput() {
             )}
           </div>
           <textarea
-            className="leading-6 w-full resize-none focus:outline-0 bg-transparent text-white py-2 px-3 placeholder:text-secondary-text max-h-40 break-words"
+            className="w-full px-3 py-2 leading-6 text-white break-words bg-transparent resize-none focus:outline-0 placeholder:text-secondary-text max-h-40"
             placeholder="Ask ORBI :)"
             onChange={handleChange}
             value={text}
@@ -199,11 +199,11 @@ export default function ChatInput() {
               <button
                 onClick={handleAddClick}
                 disabled={isFileLimitReached}
-                className="text-white/70 h-10 w-10 rounded-full hover:text-white flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Add file"
               >
                 <svg
-                  className="h-6 w-6 "
+                  className="w-6 h-6 "
                   fill="none"
                   height="24"
                   stroke="currentColor"
@@ -221,11 +221,11 @@ export default function ChatInput() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="text-white/70 h-10 w-10 rounded-full hover:text-white flex items-center justify-center cursor-pointer"
+                className="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer text-white/70 hover:text-white"
                 aria-label="Use microphone"
               >
                 <svg
-                  className="h-6 w-6"
+                  className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   strokeLinecap="round"
@@ -240,11 +240,11 @@ export default function ChatInput() {
                 </svg>
               </button>
               <button
-                className=" bg-blue-600 hover:bg-blue-700 h-10 w-10 rounded-full flex items-center justify-center cursor-pointer"
+                className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full cursor-pointer  hover:bg-blue-700"
                 aria-label="Send message"
               >
                 <svg
-                  className="h-6 w-6"
+                  className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   strokeLinecap="round"
