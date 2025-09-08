@@ -97,7 +97,7 @@ export default function LoginView() {
               <input
                 type="email"
                 placeholder="you@example.com"
-                className="w-full p-3 border rounded-lg bg-dark-bg border-border-color placeholder:text-secondary-text focus:ring focus:outline focus:outline-blue-600 focus:border-blue-600"
+                className="w-full p-3 border rounded-lg bg-dark-bg border-border-color placeholder:text-secondary-text focus:ring-0 focus:outline-0 focus:border-blue-600"
               />
             </div>
             <div className="relative">
@@ -151,7 +151,7 @@ export default function LoginView() {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full p-3 tracking-widest border rounded-lg placeholder:tracking-widest bg-dark-bg border-border-color placeholder:text-secondary-text focus:ring focus:outline focus:outline-blue-600 focus:border-blue-600"
+                className="w-full p-3 tracking-widest border rounded-lg placeholder:tracking-widest bg-dark-bg border-border-color placeholder:text-secondary-text focus:ring-0 focus:outline-0 focus:outline-blue-600 focus:border-blue-600"
               />
             </div>
             <button className="w-full p-3 font-bold text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700">
@@ -215,7 +215,7 @@ export default function LoginView() {
                     <button className="flex flex-row items-center w-full gap-2 px-3 py-2 cursor-pointer hover:bg-hover-bg rounded-xl" ><Mail size={16} />Contact Us</button>
                   </li>
                   <li className="mt-10">
-                    <button className="box-border flex flex-row items-center w-full gap-2 px-3 py-2 text-red-500 border border-transparent cursor-pointer hover:border hover:border-red-500 rounded-xl" ><LogOut  size={16} />Log Out </button>
+                    <button className="box-border flex flex-row items-center w-full gap-2 px-3 py-2 text-red-500 border border-transparent cursor-pointer bg-red-950/20 hover:border hover:border-red-500 rounded-xl" ><LogOut  size={16} />Log Out </button>
                   </li>
                 </ul>
               </div>

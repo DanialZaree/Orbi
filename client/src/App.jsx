@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAuth } from './context/AuthContext';
 import LoginView from './components/LoginView';
 import ChatInterface from './components/ChatInterface';
@@ -10,17 +9,17 @@ function App() {
   const { authToken } = useAuth();
 
   return (
-    <div className="flex h-screen bg-dark-bg   text-white relative font-sans">
+    <div className="relative flex h-screen font-sans text-white bg-dark-bg">
       {/* Conditionally render Sidebar and Profile (as ChatInterface) */}
       {authToken && <ChatInterface />}
 
       {/* Main content area that is always visible */}
-      <main className="flex-1 flex flex-col items-center font-sans">
+      <main className="flex flex-col items-center flex-1 font-sans">
         {/* Conditionally render Login Button */}
         {!authToken && <LoginView />}
 
         {/* The Welcome message is always in the center */}
-        <div className="flex-1 flex items-center justify-center font-sans">
+        <div className="flex items-center justify-center flex-1 font-sans">
           <Welcome />
         </div>
 
