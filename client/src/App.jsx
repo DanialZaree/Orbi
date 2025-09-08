@@ -1,6 +1,6 @@
 import { useAuth } from './context/AuthContext';
+import Sidebar from './components/Sidebar';
 import LoginView from './components/LoginView';
-import ChatInterface from './components/ChatInterface';
 import Welcome from './components/Welcome';
 import ChatInput from './components/ChatInput';
 import './App.css';
@@ -11,7 +11,7 @@ function App() {
   return (
     <div className="relative flex h-screen font-sans text-white bg-dark-bg">
       {/* Conditionally render Sidebar and Profile (as ChatInterface) */}
-      {authToken && <ChatInterface />}
+     <Sidebar />
 
       {/* Main content area that is always visible */}
       <main className="flex flex-col items-center flex-1 font-sans">
