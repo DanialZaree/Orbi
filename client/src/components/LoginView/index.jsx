@@ -191,7 +191,7 @@ export default function LoginView() {
               <X size={18}/>
             </button>
           </div>
-          <div className="flex flex-row h-[75]">
+          <div className="flex flex-row">
             <div className="w-1/3 p-5">
               <div className="w-full overflow-auto">
                 <ul className="flex flex-col flex-1 gap-2">
