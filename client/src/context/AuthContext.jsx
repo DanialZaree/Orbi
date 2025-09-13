@@ -1,46 +1,67 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import apiClient from '../services/api'; // Your Axios instance
+import { createContext, useState, useContext, useEffect } from 'react';
+import apiClient from '../services/api';
 
-// 1. Create the Context
 const AuthContext = createContext();
 
-// 2. Create the Provider Component
 export function AuthProvider({ children }) {
-  const [authToken, setAuthToken] = useState(localStorage.getItem('authToken'));
-  const [user, setUser] = useState(null); // Optional: store user details
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem('authToken'));
+  const [user, setUser] = useState(null);
+  
+  // --- ADDED STATES ---
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Set the token in localStorage and apiClient defaults
-  const setToken = (token) => {
-    if (token) {
-      localStorage.setItem('authToken', token);
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  useEffect(() => {
+    if (authToken) {
+      localStorage.setItem('authToken', authToken);
+      if (apiClient && apiClient.defaults) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      }
     } else {
       localStorage.removeItem('authToken');
-      delete apiClient.defaults.headers.common['Authorization'];
-    }
-    setAuthToken(token);
-  };
-
-  const login = async (credential) => {
-    try {
-      const response = await apiClient.post('/auth/google', { credential });
-      if (response.data.success) {
-        setToken(response.data.token);
-        setUser(response.data.user); // Optionally save user data
+      if (apiClient && apiClient.defaults) {
+        delete apiClient.defaults.headers.common['Authorization'];
       }
-    } catch (error) {
-      console.error("Login failed:", error);
+    }
+  }, [authToken]);
+
+  const login = async (authCode) => {
+    if (!authCode) {
+      console.error("Login function was called without an auth code.");
+      return;
+    }
+
+    // --- UPDATE LOGIN LOGIC ---
+    setIsLoading(true);
+    setError(null); // Clear previous errors
+
+    try {
+      const response = await apiClient.post('/auth/google', { code: authCode });
+      
+      if (response.data.success) {
+        setUser(response.data.user);
+        setAuthToken(response.data.token);
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
+      // Set a user-friendly error message
+      setError("Login failed. Please try again."); 
+    } finally {
+      setIsLoading(false); // Stop loading in both success and error cases
     }
   };
 
   const logout = () => {
-    setToken(null);
     setUser(null);
+    setAuthToken(null);
   };
 
+  // --- EXPORT NEW VALUES ---
   const value = {
     authToken,
     user,
+    isLoading,
+    error,
     login,
     logout,
   };
@@ -48,7 +69,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// 3. Create a custom hook for easy access
 export function useAuth() {
   return useContext(AuthContext);
 }
+

@@ -4,14 +4,18 @@ const User = require('../models/user');
 
 const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET, // You need to add this to your .env
+    process.env.GOOGLE_CLIENT_SECRET,
     'postmessage', // Required for this flow
 );
 
 exports.googleLogin = async (req, res) => {
     try {
-        // The frontend now sends an authorization 'code'
-        const { code } = req.body; 
+        const { code } = req.body;
+
+        // Added a check to ensure the code exists
+        if (!code) {
+            return res.status(400).json({ success: false, message: "Authorization code is missing." });
+        }
 
         // Exchange the code for tokens
         const { tokens } = await client.getToken(code);
@@ -55,7 +59,14 @@ exports.googleLogin = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error with Google authentication:", error);
+        // --- ADDED DETAILED ERROR LOGGING ---
+        console.error("!!! GOOGLE AUTHENTICATION FAILED !!!");
+        console.error("Error Message:", error.message);
+        // This will print the specific error from Google (e.g., 'invalid_grant', 'redirect_uri_mismatch')
+        if (error.response && error.response.data) {
+            console.error("Error Details from Google:", error.response.data);
+        }
+        // --- END OF DETAILED LOGGING ---
         res.status(401).json({ success: false, message: "Google authentication failed." });
     }
 };

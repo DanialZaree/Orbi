@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import orbi from "../../assets/orbi.png";
+import apiClient from "../../services/api";
 import OptionsMenu from "../optionsMenu";
 import DeleteModal from "../Modal/DeleteModal";
 import {
@@ -16,11 +17,24 @@ export default function Sidebar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  const [chatName, setChatName] = useState([
-    "tracking gps card",
-    "hot chitos chat",
-    "more chips chats",
-  ]);
+  const [chatHistory, setChatHistory] = useState([]);
+
+    useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        // Make the API call to your backend
+        const response = await apiClient.get("/chat");
+        if (response.data.success) {
+          // Update the state with the chat history from the database
+          setChatHistory(response.data.chats);
+        }
+      } catch (error) {
+        console.error("Failed to fetch chat history:", error);
+      }
+    };
+
+    fetchChatHistory();
+  }, []);
 
   const openHandle = () => {
     setIsSideOpen(!isSideOpen);
@@ -47,16 +61,16 @@ export default function Sidebar() {
     };
   }, [isSideOpen]);
 
-  const handleDeleteRequest = (index) => {
-    setItemToDelete({ index, name: chatName[index] });
+  const handleDeleteRequest = (chat) => {
+    setItemToDelete(chat);
     setIsModalOpen(true);
     setOpenMenuIndex(null);
   };
 
   const handleConfirmDelete = () => {
     if (itemToDelete !== null) {
-      setChatName((prevChats) =>
-        prevChats.filter((_, i) => i !== itemToDelete.index)
+setChatHistory((prevChats) =>
+        prevChats.filter((chat) => chat._id !== itemToDelete._id)
       );
     }
     setIsModalOpen(false);
@@ -112,14 +126,14 @@ export default function Sidebar() {
                 HISTORY
               </h3>
               <ul className="space-y-2">
-                {chatName.map((chat, index) => (
-                  <li key={index} className="relative">
+                {chatHistory.map((chat, index) => (
+                  <li key={chat._id} className="relative">
                     <a
                       className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg cursor-pointer group text-secondary-text hover:bg-dark-third-bg"
                       href="#"
                     >
                       <MessageSquare size={20} className="shrink-0" />
-                      <span className="truncate">{chat}</span>
+                      <span className="truncate">{chat.title}</span>
                       <button
                         onClick={(e) => handleOptionsToggle(e, index)}
                         className="hidden ml-auto cursor-pointer group-hover:block hover:text-white"
@@ -131,7 +145,7 @@ export default function Sidebar() {
                     {openMenuIndex === index && (
                       <OptionsMenu
                         onClose={() => setOpenMenuIndex(null)}
-                        onDelete={() => handleDeleteRequest(index)}
+                        onDelete={() => handleDeleteRequest(chat)}
                       />
                     )}
                   </li>
@@ -180,7 +194,7 @@ export default function Sidebar() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        chatName={itemToDelete?.name}
+chatName={itemToDelete?.title}
       />
     </>
   );
