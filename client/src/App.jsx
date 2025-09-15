@@ -2,6 +2,7 @@ import { useAuth } from "./context/AuthContext";
 import Sidebar from "./components/Sidebar";
 import LoginView from "./components/LoginView";
 import Welcome from "./components/Welcome";
+import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
 import "./App.css";
 
@@ -20,7 +21,8 @@ function App() {
 
         {/* The Welcome message is always in the center */}
         <div className="flex items-center justify-center flex-1 font-sans">
-          <Welcome />
+          {/* <Welcome /> */}
+          <ChatWindow />
         </div>
 
         {/* The Chat Input is always at the bottom */}
