@@ -25,3 +25,58 @@
   --color-hover-bg: #283039;
   --color-dark-third-bg: #283039;
 }
+
+* {
+  --sb-track-color: #00000000;
+  --sb-thumb-color: #1447e6;
+  --sb-size: 0px;
+}
+
+*::-webkit-scrollbar {
+  width: var(--sb-size)
+}
+.chatwindow::-webkit-scrollbar {
+  position: absolute;
+  right: 0;
+  width: var(--sb-size)
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius:0px;
+  
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: var(--sb-thumb-color)
+                     var(--sb-track-color);
+  }
+}
+/* Shiki base styles */
+.shiki {
+  background-color: #1a1b26; /* Tokyo Night background */
+  color: #c0caf5; /* default text */
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: .7;
+}
+
+/* Shiki token colors (example for Tokyo Night) */
+.shiki .line { display: block; }
+.shiki .token.comment { color: #565f89; }
+.shiki .token.keyword { color: #bb9af7; }
+.shiki .token.string { color: #9ece6a; }
+.shiki .token.number { color: #ff9e64; }
+.shiki .token.function { color: #7aa2f7; }
+.prose pre {
+  margin-top: 0;
+  margin-bottom: 0;
+}

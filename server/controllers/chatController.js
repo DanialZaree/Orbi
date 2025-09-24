@@ -1,9 +1,10 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Chat = require('../models/chat');
-const mongoose = require('mongoose'); // Import mongoose
+const mongoose = require('mongoose');
 
+// --- UPDATED: Use a current and valid model name ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
 function parseGeminiResponse(responseText) {
     const contentArray = [];
@@ -23,12 +24,11 @@ function parseGeminiResponse(responseText) {
     return contentArray.filter(block => block.value);
 }
 
-// --- Make sure this function is exported ---
 exports.sendMessage = async (req, res) => {
     try {
         const { history, message, chatId } = req.body;
-        // This is correct: It ensures any NEW chats are saved with a proper ObjectId
         const userId = new mongoose.Types.ObjectId(req.user._id);
+        const userIdString = req.user._id.toString();
 
         const formattedHistory = history.map(msg => ({
             role: msg.role === 'assistant' ? 'model' : 'user',
@@ -46,8 +46,6 @@ exports.sendMessage = async (req, res) => {
 
         let currentChat;
         if (chatId) {
-            // Also update this query to be flexible
-            const userIdString = req.user._id.toString();
             currentChat = await Chat.findOne({ 
                 _id: chatId, 
                 $or: [{ userId: userId }, { userId: userIdString }] 
@@ -57,7 +55,7 @@ exports.sendMessage = async (req, res) => {
             }
         } else {
             currentChat = new Chat({
-                userId: userId,
+                userId: userId, // Save new chats with the correct ObjectId type
                 title: message.substring(0, 30),
                 messages: []
             });
@@ -78,17 +76,11 @@ exports.sendMessage = async (req, res) => {
     }
 };
 
-// --- Make sure this function is exported ---
 exports.getChatHistory = async (req, res) => {
     try {
         const userIdObject = req.user._id;
         const userIdString = req.user._id.toString();
 
-        console.log("--- Fetching Chat History ---");
-        console.log("Querying for ObjectId:", userIdObject);
-        console.log("Querying for String:", userIdString);
-
-        // --- FINAL FIX: Use $or to find chats where userId is either a String or an ObjectId ---
         const chats = await Chat.find({
             $or: [
                 { userId: userIdObject },
@@ -98,12 +90,6 @@ exports.getChatHistory = async (req, res) => {
             .sort({ updatedAt: -1 })
             .select('_id title');
 
-        console.log("Database found", chats.length, "chats for this user.");
-        if (chats.length > 0) {
-            console.log("Found chats:", chats);
-        }
-        console.log("--------------------------");
-
         res.status(200).json({ success: true, chats });
     } catch (error) {
         console.error("Error fetching chat history:", error);
@@ -111,14 +97,12 @@ exports.getChatHistory = async (req, res) => {
     }
 };
 
-// --- Make sure this function is exported ---
 exports.getChatById = async (req, res) => {
     try {
         const { id: chatId } = req.params;
         const userIdObject = req.user._id;
         const userIdString = req.user._id.toString();
 
-        // --- FINAL FIX: Use $or here as well for consistency ---
         const chat = await Chat.findOne({ 
             _id: chatId, 
             $or: [
