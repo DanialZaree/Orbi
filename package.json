@@ -1,10 +1,14 @@
 {
-  "dependencies": {
-    "react-markdown": "^10.1.0",
-    "rehype-raw": "^7.0.0",
-    "remark-gfm": "^4.0.1"
+  "name": "my-project",
+  "version": "1.0.0",
+
+  "scripts": {
+    "start-server": "cd server && npm start",
+    "start-client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run start-server\" \"npm run start-client\""
   },
+
   "devDependencies": {
-    "shiki": "^3.13.0"
+    "concurrently": "^8.2.2"
   }
 }

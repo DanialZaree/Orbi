@@ -1,11 +1,13 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Chat = require('../models/chat');
-const mongoose = require('mongoose');
 
-// --- UPDATED: Use a current and valid model name ---
+// --- UPDATED: Use the latest recommended model name ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
+
+
+// This function parses the raw text response from Gemini into structured blocks
 function parseGeminiResponse(responseText) {
     const contentArray = [];
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
@@ -13,22 +15,25 @@ function parseGeminiResponse(responseText) {
     let match;
     while ((match = codeBlockRegex.exec(responseText)) !== null) {
         if (match.index > lastIndex) {
-            contentArray.push({ type: 'text', value: responseText.substring(lastIndex, match.index).trim() });
+            const textBlock = responseText.substring(lastIndex, match.index).trim();
+            if (textBlock) contentArray.push({ type: 'text', value: textBlock });
         }
-        contentArray.push({ type: 'code', language: match[1] || 'plaintext', value: match[2].trim() });
+        const codeBlock = match[2].trim();
+        if (codeBlock) contentArray.push({ type: 'code', language: match[1] || 'plaintext', value: codeBlock });
         lastIndex = codeBlockRegex.lastIndex;
     }
     if (lastIndex < responseText.length) {
-        contentArray.push({ type: 'text', value: responseText.substring(lastIndex).trim() });
+        const finalTextBlock = responseText.substring(lastIndex).trim();
+        if (finalTextBlock) contentArray.push({ type: 'text', value: finalTextBlock });
     }
-    return contentArray.filter(block => block.value);
+    return contentArray;
 }
 
 exports.sendMessage = async (req, res) => {
     try {
         const { history, message, chatId } = req.body;
-        const userId = new mongoose.Types.ObjectId(req.user._id);
-        const userIdString = req.user._id.toString();
+        // --- FIX: Consistently use the string version of the user ID ---
+        const userId = req.user._id.toString();
 
         const formattedHistory = history.map(msg => ({
             role: msg.role === 'assistant' ? 'model' : 'user',
@@ -46,16 +51,14 @@ exports.sendMessage = async (req, res) => {
 
         let currentChat;
         if (chatId) {
-            currentChat = await Chat.findOne({ 
-                _id: chatId, 
-                $or: [{ userId: userId }, { userId: userIdString }] 
-            });
+            // --- FIX: Simplified query to only use the string ID ---
+            currentChat = await Chat.findOne({ _id: chatId, userId: userId });
             if (!currentChat) {
                 return res.status(404).json({ success: false, message: 'Chat not found or access denied.' });
             }
         } else {
             currentChat = new Chat({
-                userId: userId, // Save new chats with the correct ObjectId type
+                userId: userId, // Save new chats with the string ID
                 title: message.substring(0, 30),
                 messages: []
             });
@@ -78,18 +81,13 @@ exports.sendMessage = async (req, res) => {
 
 exports.getChatHistory = async (req, res) => {
     try {
-        const userIdObject = req.user._id;
         const userIdString = req.user._id.toString();
-
-        const chats = await Chat.find({
-            $or: [
-                { userId: userIdObject },
-                { userId: userIdString }
-            ]
-        })
+        
+        // --- FIX: Simplified query to only use the string ID ---
+        const chats = await Chat.find({ userId: userIdString })
             .sort({ updatedAt: -1 })
             .select('_id title');
-
+        
         res.status(200).json({ success: true, chats });
     } catch (error) {
         console.error("Error fetching chat history:", error);
@@ -100,15 +98,12 @@ exports.getChatHistory = async (req, res) => {
 exports.getChatById = async (req, res) => {
     try {
         const { id: chatId } = req.params;
-        const userIdObject = req.user._id;
         const userIdString = req.user._id.toString();
 
+        // --- FIX: Simplified query to only use the string ID ---
         const chat = await Chat.findOne({ 
             _id: chatId, 
-            $or: [
-                { userId: userIdObject },
-                { userId: userIdString }
-            ]
+            userId: userIdString 
         });
 
         if (!chat) {

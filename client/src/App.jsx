@@ -85,7 +85,7 @@ export default function App() {
         <LoginView />
 
         <div className="flex flex-col items-center flex-1 w-full max-w-3xl mx-auto overflow-hidden">
-          <div className="flex-1 max-w-3xl py-4 overflow-y-auto chatwindow">
+          <div className="flex-1 w-full max-w-3xl py-4 overflow-y-auto chatwindow">
             {messages.length > 0 || activeChatId ? (
               <ChatWindow messages={messages} isLoading={isLoading} />
             ) : (

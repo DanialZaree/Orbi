@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+// --- ADDED: Import the Link component for routing ---
+import { Link } from "wouter";
 import orbi from "../../assets/orbi.png";
 import apiClient from "../../services/api";
 import OptionsMenu from "../optionsMenu";
@@ -10,31 +12,28 @@ import {
   Plus,
 } from "lucide-react";
 
-export default function Sidebar() {
+// --- ADDED: Receive props from App.jsx to handle routing ---
+export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHistory, setChatHistory }) {
   const [isSideOpen, setIsSideOpen] = useState(true);
   const [isButtonRendered, setIsButtonRendered] = useState(isSideOpen);
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  const [chatHistory, setChatHistory] = useState([]);
-
-    useEffect(() => {
+  // This useEffect will fetch the initial chat history
+  useEffect(() => {
     const fetchChatHistory = async () => {
       try {
-        // Make the API call to your backend
         const response = await apiClient.get("/chat");
         if (response.data.success) {
-          // Update the state with the chat history from the database
           setChatHistory(response.data.chats);
         }
       } catch (error) {
         console.error("Failed to fetch chat history:", error);
       }
     };
-
     fetchChatHistory();
-  }, []);
+  }, [setChatHistory]); // Dependency array ensures this runs when the setter is available
 
   const openHandle = () => {
     setIsSideOpen(!isSideOpen);
@@ -69,9 +68,10 @@ export default function Sidebar() {
 
   const handleConfirmDelete = () => {
     if (itemToDelete !== null) {
-setChatHistory((prevChats) =>
+      setChatHistory((prevChats) =>
         prevChats.filter((chat) => chat._id !== itemToDelete._id)
       );
+      // You would also add an API call here to delete from the database
     }
     setIsModalOpen(false);
     setItemToDelete(null);
@@ -101,6 +101,7 @@ setChatHistory((prevChats) =>
         <div className="flex-1 overflow-x-hidden overflow-y-auto">
           <nav className="p-4">
             <button
+            onClick={onNewChat}
               className={`flex items-center w-full gap-3 p-2 overflow-hidden text-sm border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
                transition-all duration-300 ease-in-out
                ${!isSideOpen ? "justify-start" : "justify-center"}`}
@@ -114,7 +115,6 @@ setChatHistory((prevChats) =>
                 New Chat
               </span>
             </button>
-
             <div
               className={`transition-opacity ease-in-out ${
                 isSideOpen
@@ -128,9 +128,15 @@ setChatHistory((prevChats) =>
               <ul className="space-y-2">
                 {chatHistory.map((chat, index) => (
                   <li key={chat._id} className="relative">
-                    <a
-                      className="flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg cursor-pointer group text-secondary-text hover:bg-dark-third-bg"
-                      href="#"
+                    <Link
+                      href={`/${chat._id}`}
+                      onClick={() => onSelectChat(chat._id)}
+                      className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg cursor-pointer group 
+                        ${activeChatId === chat._id 
+                            ? ' text-white bg-dark-third-bg' 
+                            : 'text-secondary-text hover:bg-dark-third-bg hover:text-white'
+                        }`
+                      }
                     >
                       <MessageSquare size={20} className="shrink-0" />
                       <span className="truncate">{chat.title}</span>
@@ -141,7 +147,7 @@ setChatHistory((prevChats) =>
                       >
                         <EllipsisVertical size={20} />
                       </button>
-                    </a>
+                    </Link>
                     {openMenuIndex === index && (
                       <OptionsMenu
                         onClose={() => setOpenMenuIndex(null)}
@@ -158,9 +164,9 @@ setChatHistory((prevChats) =>
           {isButtonRendered && (
             <button
               className={`flex items-center w-full gap-3 px-3 py-2 text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
-                   transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
-                     isSideOpen ? "grow" : "grow-0 opacity-0"
-                   }`}
+                      transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
+                        isSideOpen ? "grow" : "grow-0 opacity-0"
+                      }`}
               aria-label="Send Feedback"
             >
               <svg
@@ -194,8 +200,9 @@ setChatHistory((prevChats) =>
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmDelete}
-chatName={itemToDelete?.title}
+        chatName={itemToDelete?.title}
       />
     </>
   );
 }
+
