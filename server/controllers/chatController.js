@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const mongoose = require('mongoose');
 const Chat = require('../models/chat');
 
 // --- UPDATED: Use the latest recommended model name ---
@@ -51,6 +52,10 @@ exports.sendMessage = async (req, res) => {
 
         let currentChat;
         if (chatId) {
+            // --- FIX: Validate the incoming chatId before using it in a query ---
+            if (!mongoose.Types.ObjectId.isValid(chatId)) {
+                return res.status(400).json({ success: false, message: 'Invalid chat ID format.' });
+            }
             // --- FIX: Simplified query to only use the string ID ---
             currentChat = await Chat.findOne({ _id: chatId, userId: userId });
             if (!currentChat) {
@@ -99,6 +104,11 @@ exports.getChatById = async (req, res) => {
     try {
         const { id: chatId } = req.params;
         const userIdString = req.user._id.toString();
+
+        // --- FIX: Validate the incoming chatId before using it in a query ---
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ success: false, message: 'Invalid chat ID format.' });
+        }
 
         // --- FIX: Simplified query to only use the string ID ---
         const chat = await Chat.findOne({ 
