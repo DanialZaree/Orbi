@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react"; // 1. Import useCallback
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./context/AuthContext.jsx";
 import apiClient from "./services/api.js";
+import { useLocation, useRoute } from "wouter";
 
 import Sidebar from "./components/Sidebar";
 import LoginView from "./components/LoginView";
@@ -10,17 +11,42 @@ import ChatInput from "./components/ChatInput";
 
 export default function App() {
   const { authToken } = useAuth();
+  const [location, setLocation] = useLocation();
+  const [match, params] = useRoute("/:chatId");
 
   const [messages, setMessages] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
 
-  // --- Optimized Functions ---
+  useEffect(() => {
+    if (authToken) {
+      const fetchHistory = async () => {
+        try {
+          const response = await apiClient.get("/chat");
+          setChatHistory(response.data.chats);
+        } catch (error) {
+          console.error("Failed to fetch initial chat history:", error);
+        }
+      };
+      fetchHistory();
+    }
+  }, [authToken]);
 
-  // 2. Wrap handlers in useCallback
+  useEffect(() => {
+    if (match && params.chatId) {
+      if (params.chatId !== activeChatId) {
+        handleSelectChat(params.chatId);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match, params?.chatId]);
+
+
   const handleSelectChat = useCallback(async (chatId) => {
+    if (!chatId) return;
     setActiveChatId(chatId);
+    setLocation(`/${chatId}`);
     setIsLoading(true);
     try {
       const response = await apiClient.get(`/chat/${chatId}`);
@@ -30,17 +56,16 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  }, []); // Empty array: this function never needs to be re-created
+  }, [setLocation]);
 
   const handleNewChat = useCallback(() => {
     setActiveChatId(null);
     setMessages([]);
-  }, []); // Empty array: this function also never needs to be re-created
+    setLocation("/");
+  }, [setLocation]);
 
   const handleSendMessage = useCallback(async ({ text, files }) => {
-    console.log("Sending files:", files);
     const userMessage = { role: "user", content: [{ type: "text", value: text }] };
-    
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setIsLoading(true);
 
@@ -48,26 +73,29 @@ export default function App() {
       const response = await apiClient.post("/chat", {
         message: text,
         chatId: activeChatId,
-        history: messages, // Pass the history before the new user message
+        history: messages,
       });
 
-      if (!activeChatId) {
-        setActiveChatId(response.data.chatId);
-        const historyResponse = await apiClient.get("/chat");
-        setChatHistory(historyResponse.data.chats);
+      const newChatId = response.data.chatId;
+      
+      // --- THIS IS THE FIX: Check for the newChat object from the backend ---
+      if (response.data.newChat) {
+        setActiveChatId(newChatId);
+        setLocation(`/${newChatId}`);
+        // Use the AI-generated title from the backend response
+        setChatHistory(prevHistory => [response.data.newChat, ...prevHistory]);
       }
 
       const botMessage = { role: "assistant", content: response.data.response };
       setMessages(prevMessages => [...prevMessages, botMessage]);
-
     } catch (error) {
       console.error("Error sending message:", error);
-      const errorMessage = { role: "assistant", content: [{ type: "text", value: "Sorry, I couldn't get a response. Please try again." }] };
+      const errorMessage = { role: "assistant", content: [{ type: "text", value: "Sorry, I couldn't get a response." }] };
       setMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  }, [activeChatId, messages]); // Dependency array: re-create this function only if activeChatId or messages change
+  }, [activeChatId, messages, setLocation]);
 
   return (
     <div className="relative flex h-screen font-sans text-white bg-dark-bg">

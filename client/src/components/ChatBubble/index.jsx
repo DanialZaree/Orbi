@@ -1,18 +1,31 @@
 import { useState, useEffect } from "react";
-import { Bot, Copy, Check, Link as LinkIcon } from "lucide-react";
+import { Bot, Copy, Check, Link as LinkIcon, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeExternalLinks from "rehype-external-links";
-// --- THIS IS THE FIX: Use the correct browser-optimized bundle ---
 import { createHighlighter } from "shiki/bundle/web";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+// Import the CSS for KaTeX to style the math formulas
+import "katex/dist/katex.min.css";
 
 // --- Shiki Highlighter ---
 // We pre-load common languages for speed and load others on demand.
 const highlighterPromise = createHighlighter({
   themes: ["tokyo-night"],
-  langs: ["javascript", "typescript", "python", "jsx", "tsx", "html", "css", "json", "markdown", "bash"],
+  langs: [
+    "javascript",
+    "typescript",
+    "python",
+    "jsx",
+    "tsx",
+    "html",
+    "css",
+    "json",
+    "markdown",
+    "bash",
+  ],
 });
-
 
 // --- ShikiCodeBlock Component ---
 function ShikiCodeBlock({ code, lang }) {
@@ -27,23 +40,34 @@ function ShikiCodeBlock({ code, lang }) {
         if (!highlighter.getLoadedLanguages().includes(lang)) {
           await highlighter.loadLanguage(lang);
         }
-        const html = highlighter.codeToHtml(code, { lang, theme: "tokyo-night" });
+        const html = highlighter.codeToHtml(code, {
+          lang,
+          theme: "tokyo-night",
+        });
         if (isMounted) {
           setHtmlBlock(html);
         }
       } catch (error) {
-        console.warn(`Shiki language "${lang}" not found or failed to load. Falling back to plaintext.`);
+        console.warn(
+          `Shiki language "${lang}" not found or failed to load. Falling back to plaintext.`
+        );
         if (isMounted) {
           // If loading fails, render as plain text to prevent a crash
-          const fallbackHtml = highlighter.codeToHtml(code, { lang: 'plaintext', theme: 'tokyo-night' });
+          const fallbackHtml = highlighter.codeToHtml(code, {
+            lang: "plaintext",
+            theme: "tokyo-night",
+          });
           setHtmlBlock(fallbackHtml);
         }
       }
     });
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [code, lang]);
 
-  const handleCopy = () => {
+  const handleCopy = (e) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(code).then(() => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
@@ -51,30 +75,44 @@ function ShikiCodeBlock({ code, lang }) {
   };
 
   return (
-    <div className="relative my-4 overflow-hidden border rounded-lg group border-border-color">
-      <div className="flex items-center justify-between bg-zinc-800 px-3 py-1.5">
-          <span className="text-xs tracking-wide text-gray-400 uppercase">{lang}</span>
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 text-gray-300 hover:text-white text-xs"
-          >
-            {isCopied ? <Check size={14} /> : <Copy size={14} />}
-            {isCopied ? "Copied!" : "Copy"}
-          </button>
-      </div>
+    <details
+      open
+      className="relative my-4 overflow-hidden border rounded-lg group border-border-color w-2xl"
+    >
+      <summary className="flex items-center justify-between bg-[#1a1b26] px-3 py-1.5 border-border-color border-b ">
+        <div className="flex items-center gap-2 ajab">
+          <span className="text-sm tracking-wide uppercase text-secondary-text">
+            {lang}
+          </span>
+          <ChevronDown
+            size={20}
+            className="transition-transform duration-200 cursor-pointer text-secondary-text group-open:rotate-180 hover:text-white"
+          />
+        </div>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 text-secondary-text hover:text-white text-sm cursor-pointer hover:bg-dark-third-bg p-2 rounded-xl transition"
+        >
+          {isCopied ? <Check size={16} /> : <Copy size={16} />}
+          {isCopied ? "Copied!" : "Copy"}
+        </button>
+      </summary>
       <div dangerouslySetInnerHTML={{ __html: htmlBlock }} />
-    </div>
+    </details>
   );
 }
-
 
 export default function ChatBubble({ message }) {
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex items-start gap-4 ${isUser ? "justify-end" : "justify-start"}`}>
+    <div
+      className={`flex items-start gap-4 ${
+        isUser ? "justify-end" : "justify-start"
+      }`}
+    >
       {!isUser && (
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-surface shrink-0">
           <Bot size={20} />
         </div>
       )}
@@ -84,30 +122,47 @@ export default function ChatBubble({ message }) {
         }`}
       >
         {message.content?.map((block, index) => {
-          if (block.type === 'code') {
-            return <ShikiCodeBlock key={index} code={block.value} lang={block.language || 'plaintext'} />;
-          }
-          if (typeof block.value === 'string') {
+          if (block.type === "code") {
             return (
-              <div key={index} className="px-3 py-1 prose-sm prose prose-invert">
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[[rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]]}
-                    components={{
-                      a: ({node, ...props}) => (
-                        <a {...props} className="inline-flex items-center gap-1 text-blue-400 hover:underline">
-                          {props.children} <LinkIcon size={12} />
-                        </a>
-                      ),
-                      p: ({node, ...props}) => <p {...props} className="my-3 first:mt-0 last:mb-0" />,
-                      ul: ({node, ...props}) => <ul {...props} className="pl-0 my-3 list-none" />,
-                      ol: ({node, ...props}) => <ol {...props} className="pl-0 my-3 list-none" />,
-                    }}
-                  >
-                      {block.value}
-                  </ReactMarkdown>
-              </div>
+              <ShikiCodeBlock
+                key={index}
+                code={block.value}
+                lang={block.language || "plaintext"}
+              />
             );
+          }
+          if (typeof block.value === "string") {
+            if (!isUser) {
+              return (
+                <div
+                  key={index}
+                  className="px-3 py-1 prose-sm prose prose-invert"
+                >
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[
+                      [
+                        rehypeExternalLinks,
+                        { target: "_blank", rel: ["noopener", "noreferrer"] },
+                      ],
+                      rehypeKatex,
+                    ]}
+                  >
+                    {block.value}
+                  </ReactMarkdown>
+                </div>
+              );
+            } else {
+              return (
+                <pre
+                  key={index}
+                  className="px-3 py-1 font-sans text-sm text-white whitespace-pre-wrap"
+                >
+                  {block.value.trim()}
+                  {""}
+                </pre>
+              );
+            }
           }
           return null;
         })}
@@ -115,4 +170,3 @@ export default function ChatBubble({ message }) {
     </div>
   );
 }
-

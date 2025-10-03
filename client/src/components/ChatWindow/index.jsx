@@ -20,7 +20,7 @@ export default function ChatWindow({ messages, isLoading }) {
   }
 
   return (
-    <div className="flex-1 w-full overflow-y-auto p-4 sm:p-6">
+    <div className="flex-1 w-full overflow-y-auto p-6 pt-12 ">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Use the messages prop directly. If it's empty, nothing will be rendered. */}
         {messages && messages.map((msg, index) => (
