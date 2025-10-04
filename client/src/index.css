@@ -32,7 +32,7 @@
 }
 
 @theme {
-  --font-sans: "Satoshi", sans-serif;
+  --font-sans: 'Satoshi', 'Vazirmatn';
   --color-dark-bg: #111418;
   --color-dark-secondary-bg: #1a1d21;
   --color-secondary-text: #9cabba;
@@ -106,6 +106,9 @@ pre::-webkit-scrollbar-thumb {
   pre {
     scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
   }
+}
+details{
+  direction: ltr !important;
 }
 /* Shiki base styles */
 .shiki {

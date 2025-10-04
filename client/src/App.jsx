@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./context/AuthContext.jsx";
 import apiClient from "./services/api.js";
 import { useLocation, useRoute } from "wouter";
-
 import Sidebar from "./components/Sidebar";
 import LoginView from "./components/LoginView";
 import Welcome from "./components/Welcome";

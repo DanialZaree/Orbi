@@ -6,11 +6,9 @@ import rehypeExternalLinks from "rehype-external-links";
 import { createHighlighter } from "shiki/bundle/web";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-// Import the CSS for KaTeX to style the math formulas
 import "katex/dist/katex.min.css";
 
-// --- Shiki Highlighter ---
-// We pre-load common languages for speed and load others on demand.
+
 const highlighterPromise = createHighlighter({
   themes: ["tokyo-night"],
   langs: [
