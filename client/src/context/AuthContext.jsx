@@ -4,93 +4,101 @@ import apiClient from '../services/api';
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [authToken, setAuthToken] = useState(() => {
-    const token = localStorage.getItem('authToken');
-    console.log("AuthContext: Initial authToken from localStorage:", token); // <-- ADD THIS LOG
-    return token;
-  });
-  const [user, setUser] = useState(null); 
-  const [isLoading, setIsLoading] = useState(false);
+  const [authToken, setAuthToken] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [error, setError] = useState(null);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setAuthToken(null);
+    // The useEffect for authToken will handle localStorage and apiClient headers
+  }, []);
+
+  // Add a response interceptor to handle 401 errors globally
+  useEffect(() => {
+    const interceptorId = apiClient.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      apiClient.interceptors.response.eject(interceptorId);
+    };
+  }, [logout]);
 
   // Function to fetch user profile when needed
   const fetchUserProfile = useCallback(async (token) => {
     if (!token) {
       setUser(null);
-      console.log("AuthContext: fetchUserProfile called with no token."); // <-- ADD THIS LOG
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
     setError(null);
     try {
-      console.log("AuthContext: Attempting to fetch profile with token:", token); // <-- ADD THIS LOG
-      const response = await apiClient.get('/auth/profile', { 
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log("AuthContext: Fetched user profile success:", response.data.user); // <-- ADD THIS LOG
-      setUser(response.data.user); 
+      // The token is already set in the apiClient instance by the useEffect hook
+      const response = await apiClient.get('/auth/me');
+      if (response.data.success) {
+        setUser(response.data.user);
+      } else {
+        // Handle cases where the backend returns success: false
+        logout();
+      }
     } catch (err) {
-      console.error("AuthContext: Failed to fetch user profile:", err.message, err.response?.status); // <-- MODIFIED LOG
-      setError("Failed to load user profile. Please log in again.");
-      setUser(null); 
-      setAuthToken(null); 
-      localStorage.removeItem('authToken');
+      // The Axios interceptor will handle 401, but other errors might occur
+      console.error("Failed to fetch user profile:", err);
+      setError("Failed to load user profile.");
+      logout(); // Logout on other fetch errors as well
     } finally {
       setIsLoading(false);
     }
-  }, []); 
+  }, [logout]);
+
+  // On component mount, check for a token and fetch the user profile
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setAuthToken(token);
+      fetchUserProfile(token);
+    } else {
+      setIsLoading(false); // No token, stop loading
+    }
+  }, [fetchUserProfile]);
 
   // Effect to manage authToken in localStorage and API client headers
   useEffect(() => {
     if (authToken) {
       localStorage.setItem('authToken', authToken);
-      if (apiClient && apiClient.defaults) {
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-        console.log("AuthContext: apiClient Authorization header set:", apiClient.defaults.headers.common['Authorization']); // <-- ADD THIS LOG
-      }
-      if (!user) { 
-        console.log("AuthContext: authToken exists, user is null. Calling fetchUserProfile."); // <-- ADD THIS LOG
-        fetchUserProfile(authToken); 
-      }
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
     } else {
       localStorage.removeItem('authToken');
-      if (apiClient && apiClient.defaults) {
-        delete apiClient.defaults.headers.common['Authorization'];
-        console.log("AuthContext: apiClient Authorization header cleared."); // <-- ADD THIS LOG
-      }
-      setUser(null); 
-      console.log("AuthContext: authToken is null. User set to null."); // <-- ADD THIS LOG
+      delete apiClient.defaults.headers.common['Authorization'];
     }
-  }, [authToken, user, fetchUserProfile]); 
+  }, [authToken]);
 
   const login = async (authCode) => {
-    // ... (existing login logic)
+    setIsLoading(true);
     try {
       const response = await apiClient.post('/auth/google', { code: authCode });
-      console.log("AuthContext: Google login response from backend:", response.data); // <-- ADD THIS LOG
       if (response.data.success) {
-        setUser(response.data.user); 
         setAuthToken(response.data.token);
-        console.log("AuthContext: Login successful, authToken and user set."); // <-- ADD THIS LOG
+        setUser(response.data.user);
+        setError(null);
       } else {
         setError(response.data.message || "Google login failed.");
+        logout();
       }
     } catch (err) {
-      console.error("AuthContext: Login failed:", err);
-      setError(err.response?.data?.message || "Login failed. Please try again."); 
-      setUser(null);
-      setAuthToken(null);
-      localStorage.removeItem('authToken');
+      setError(err.response?.data?.message || "Login failed. Please try again.");
+      logout();
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setAuthToken(null);
-    localStorage.removeItem('authToken'); 
-    console.log("AuthContext: User logged out."); // <-- ADD THIS LOG
   };
 
   const value = { authToken, user, isLoading, error, login, logout };
