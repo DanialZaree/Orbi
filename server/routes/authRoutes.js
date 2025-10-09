@@ -7,7 +7,6 @@ const authMiddleware = require('../middleware/authMiddleware'); // A middleware 
 router.post('/google', authController.googleLogin);
 
 // NEW: Protected route to get user profile
-router.get('/profile', authMiddleware, authController.getProfile); // <-- Add this line
-                                          // `authMiddleware` would verify the JWT and attach user.id to req
+router.get('/me', authMiddleware, authController.getMe);
 
 module.exports = router;
