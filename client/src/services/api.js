@@ -1,16 +1,17 @@
 import axios from 'axios';
 
-// Create an instance of Axios
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Your backend API URL
+  baseURL: 'http://localhost:5000/api',
 });
 
-// This interceptor is now part of the default export logic
-// and doesn't need to be set up in the AuthContext.
+// --- THIS IS THE FIX (Part 1) ---
+// This interceptor runs before every request.
 apiClient.interceptors.request.use(
   (config) => {
+    // Read the token from localStorage on every request
     const token = localStorage.getItem('authToken');
     if (token) {
+      // If the token exists, add it to the header
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -20,5 +21,5 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add this line to export the configured apiClient
 export default apiClient;
+

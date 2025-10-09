@@ -326,7 +326,7 @@ export default function LoginView() {
         {/* --- IMPORTANT CHANGE HERE: Display user profile information --- */}
         <div className="w-2/3 p-5">
           {user ? (
-            <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex flex-col items-center gap-4 text-center h-full justify-center">
               {user.picture && (
                 <img
                   src={user.picture}
