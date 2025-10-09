@@ -17,16 +17,16 @@ import {
 
 export default function LoginView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // 1. State to manage which view to show: 'signIn' or 'signUp'
-  const [view, setView] = useState("signIn");
+  const [view, setView] = useState("signIn"); // 'signIn' or 'signUp'
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
-    // Always reset to the 'Sign In' view when opening or closing the modal
-    setView("signIn");
+    setView("signIn"); // Always reset to 'Sign In' view when opening/closing
   };
 
-  const { authToken, login, logout, isLoading, error } = useAuth();
+  // --- IMPORTANT CHANGE HERE: Destructure 'user' from useAuth ---
+  const { authToken, login, logout, isLoading, error, user } = useAuth();
+  // --- END IMPORTANT CHANGE ---
 
   const googleLogin = useGoogleLogin({
     flow: "auth-code",
@@ -122,7 +122,6 @@ export default function LoginView() {
         <span className="text-sm text-secondary-text">
           Don't have an account?
         </span>
-        {/* --- 2. Button to switch to the 'signUp' view --- */}
         <button
           onClick={() => setView("signUp")}
           className="text-sm font-bold text-blue-500 cursor-pointer hover:underline"
@@ -324,7 +323,26 @@ export default function LoginView() {
             </ul>
           </div>
         </div>
-        <div className="w-2/3 p-5">a</div>
+        {/* --- IMPORTANT CHANGE HERE: Display user profile information --- */}
+        <div className="w-2/3 p-5">
+          {user ? (
+            <div className="flex flex-col items-center gap-4 text-center">
+              {user.picture && (
+                <img
+                  src={user.picture}
+                  alt="User Profile"
+                  className="w-24 h-24 rounded-full border-2 border-blue-500 object-cover"
+                />
+              )}
+              <h3 className="text-xl font-bold text-white">{user.name || "User Name"}</h3>
+              <p className="text-sm text-secondary-text">{user.email || "user@example.com"}</p>
+              {/* You can add more profile details here if your 'user' object has them */}
+            </div>
+          ) : (
+            <p className="text-secondary-text">User profile not available.</p>
+          )}
+        </div>
+        {/* --- END IMPORTANT CHANGE --- */}
       </div>
     </div>
   );
@@ -343,8 +361,7 @@ export default function LoginView() {
         <div className="absolute inset-0 z-[2] flex items-center justify-center bg-background/10 backdrop-blur-sm">
           {authToken ? (
             <SettingsPanel />
-          ) : // --- 3. Use the 'view' state to decide which form to show ---
-          view === "signIn" ? (
+          ) : view === "signIn" ? (
             <SignInForm />
           ) : (
             <SignUpForm />

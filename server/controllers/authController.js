@@ -71,3 +71,59 @@ exports.googleLogin = async (req, res) => {
     }
 };
 
+exports.getProfile = async (req, res) => {
+
+    try {
+
+        // Assuming you have a middleware that extracts the user ID from the JWT
+
+        // and attaches it to req.userId or req.user.id
+
+        const userId = req.userId; // Or req.user.id, depending on your JWT middleware
+
+
+        if (!userId) {
+
+            return res.status(401).json({ success: false, message: "Unauthorized: No user ID provided by middleware." });
+
+        }
+
+
+        const user = await User.findById(userId).select('-password'); // Exclude password from response
+
+
+        if (!user) {
+
+            return res.status(404).json({ success: false, message: "User not found." });
+
+        }
+
+
+        res.status(200).json({
+
+            success: true,
+
+            user: {
+
+                id: user._id,
+
+                name: user.displayName, // Use displayName from DB
+
+                email: user.email,
+
+                picture: user.profilePicture, // Use profilePicture from DB
+
+            }
+
+        });
+
+
+    } catch (error) {
+
+        console.error("Error fetching user profile:", error);
+
+        res.status(500).json({ success: false, message: "Internal server error." });
+
+    }
+
+};
