@@ -87,13 +87,13 @@ function ShikiCodeBlock({ code, lang }) {
             className="transition-transform duration-200 cursor-pointer text-secondary-text group-open:rotate-180 hover:text-white"
           />
         </div>
-        <button
+        <div
           onClick={handleCopy}
           className="flex items-center gap-1.5 text-secondary-text hover:text-white text-sm cursor-pointer hover:bg-dark-third-bg p-2 rounded-xl transition"
         >
           {isCopied ? <Check size={16} /> : <Copy size={16} />}
           {isCopied ? "Copied!" : "Copy"}
-        </button>
+        </div>
       </summary>
       <div dangerouslySetInnerHTML={{ __html: htmlBlock }} />
     </details>

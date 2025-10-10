@@ -98,7 +98,6 @@ export default function App() {
 
   return (
     <div className="relative flex h-screen font-sans text-white bg-dark-bg">
-      {authToken && (
         <Sidebar
           chatHistory={chatHistory}
           setChatHistory={setChatHistory}
@@ -106,8 +105,6 @@ export default function App() {
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
         />
-      )}
-
       <main className="relative flex flex-col flex-1 h-full font-sans">
         <LoginView />
 
