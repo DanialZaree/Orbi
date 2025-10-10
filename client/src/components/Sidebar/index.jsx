@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-// --- ADDED: Import the Link component for routing ---
 import { Link } from "wouter";
 import orbi from "../../assets/orbi.png";
 import apiClient from "../../services/api";
 import OptionsMenu from "../optionsMenu";
 import DeleteModal from "../Modal/DeleteModal";
+import RenameModal from "../Modal/RenameModal";
 import {
   EllipsisVertical,
   ChevronLeft,
@@ -13,27 +13,40 @@ import {
 } from "lucide-react";
 
 // --- ADDED: Receive props from App.jsx to handle routing ---
-export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHistory, setChatHistory }) {
+export default function Sidebar({
+  onSelectChat,
+  onNewChat,
+  activeChatId,
+  chatHistory,
+  setChatHistory,
+}) {
   const [isSideOpen, setIsSideOpen] = useState(true);
   const [isButtonRendered, setIsButtonRendered] = useState(isSideOpen);
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // --- PROBLEM FIX: Renamed for clarity ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  // This useEffect will fetch the initial chat history
-  useEffect(() => {
-    const fetchChatHistory = async () => {
-      try {
-        const response = await apiClient.get("/chat");
-        if (response.data.success) {
-          setChatHistory(response.data.chats);
-        }
-      } catch (error) {
-        console.error("Failed to fetch chat history:", error);
-      }
-    };
-    fetchChatHistory();
-  }, [setChatHistory]); // Dependency array ensures this runs when the setter is available
+  // --- PROBLEM FIX: Added state for the Rename functionality ---
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [itemToRename, setItemToRename] = useState(null);
+
+  // // This useEffect will fetch the initial chat history
+  // useEffect(() => {
+  //   const fetchChatHistory = async () => {
+  //     try {
+  //       const response = await apiClient.get("/chat");
+  //       if (response.data.success) {
+  //         setChatHistory(response.data.chats);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch chat history:", error);
+  //     }
+  //   };
+  //   fetchChatHistory();
+  // }, [setChatHistory]); // Dependency array ensures this runs when the setter is available
 
   const openHandle = () => {
     setIsSideOpen(!isSideOpen);
@@ -66,17 +79,61 @@ export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHis
     setOpenMenuIndex(null);
   };
 
-  const handleConfirmDelete = () => {
-    if (itemToDelete !== null) {
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      // 1. Call the new DELETE API endpoint on the backend
+      await apiClient.delete(`/chat/${itemToDelete._id}`);
+
+      // 2. Update the UI instantly by removing the chat from the list
       setChatHistory((prevChats) =>
         prevChats.filter((chat) => chat._id !== itemToDelete._id)
       );
-      // You would also add an API call here to delete from the database
-    }
-    setIsModalOpen(false);
-    setItemToDelete(null);
-  };
 
+      // 3. If the deleted chat was the active one, navigate to the "new chat" screen
+      if (activeChatId === itemToDelete._id) {
+        onNewChat();
+      }
+    } catch (error) {
+      console.error("Failed to delete chat:", error);
+      // Optionally, show an error notification to the user
+    } finally {
+      // 4. Close the modal and clear the state
+      setIsModalOpen(false);
+      setItemToDelete(null);
+    }
+  };
+  const handleRenameRequest = (chat) => {
+    setItemToRename(chat);
+    setIsRenameModalOpen(true);
+    setOpenMenuIndex(null);
+  };
+  // --- PROBLEM FIX: Added handler to confirm and execute the rename ---
+  const handleConfirmRename = async (newTitle) => {
+    if (
+      !itemToRename ||
+      newTitle.trim() === "" ||
+      newTitle === itemToRename.title
+    ) {
+      setIsRenameModalOpen(false);
+      setItemToRename(null);
+      return;
+    }
+    try {
+      await apiClient.patch(`/chat/${itemToRename._id}/rename`, { newTitle });
+      setChatHistory((prev) =>
+        prev.map((chat) =>
+          chat._id === itemToRename._id ? { ...chat, title: newTitle } : chat
+        )
+      );
+    } catch (error) {
+      console.error("Failed to rename chat:", error);
+    } finally {
+      setIsRenameModalOpen(false);
+      setItemToRename(null);
+    }
+  };
   return (
     <>
       <aside
@@ -101,7 +158,7 @@ export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHis
         <div className="flex-1 overflow-x-hidden overflow-y-auto">
           <nav className="p-4">
             <button
-            onClick={onNewChat}
+              onClick={onNewChat}
               className={`flex items-center w-full gap-3 p-2 overflow-hidden text-sm border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
                transition-all duration-300 ease-in-out
                ${!isSideOpen ? "justify-start" : "justify-center"}`}
@@ -132,11 +189,11 @@ export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHis
                       href={`/${chat._id}`}
                       onClick={() => onSelectChat(chat._id)}
                       className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg cursor-pointer group 
-                        ${activeChatId === chat._id 
-                            ? ' text-white bg-dark-third-bg' 
-                            : 'text-secondary-text hover:bg-dark-third-bg hover:text-white'
-                        }`
-                      }
+                        ${
+                          activeChatId === chat._id
+                            ? " text-white bg-dark-third-bg"
+                            : "text-secondary-text hover:bg-dark-third-bg hover:text-white"
+                        }`}
                     >
                       <MessageSquare size={20} className="shrink-0" />
                       <span className="truncate">{chat.title}</span>
@@ -152,6 +209,7 @@ export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHis
                       <OptionsMenu
                         onClose={() => setOpenMenuIndex(null)}
                         onDelete={() => handleDeleteRequest(chat)}
+                        onRename={() => handleRenameRequest(chat)}
                       />
                     )}
                   </li>
@@ -202,7 +260,12 @@ export default function Sidebar({ onSelectChat, onNewChat, activeChatId, chatHis
         onConfirm={handleConfirmDelete}
         chatName={itemToDelete?.title}
       />
+      <RenameModal
+        isOpen={isRenameModalOpen}
+        onClose={() => setIsRenameModalOpen(false)}
+        onConfirm={handleConfirmRename}
+        currentName={itemToRename?.title}
+      />
     </>
   );
 }
-

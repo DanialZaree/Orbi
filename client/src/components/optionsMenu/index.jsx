@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Pin, Trash2, Pencil } from "lucide-react"; // Example icons
 
-export default function OptionsMenu({ onClose, onDelete }) {
+export default function OptionsMenu({ onClose, onDelete,onRename, onPin }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -17,19 +17,6 @@ export default function OptionsMenu({ onClose, onDelete }) {
     };
   }, [onClose]);
 
-  const handlePin = () => {
-    console.log("Pin clicked");
-    onClose();
-  };
-  const handleRemove = () => {
-    console.log("Rename clicked");
-    onClose();
-  };
-  const handleDelete = () => {
-    console.log("Delete clicked");
-    onClose();
-  };
-
   return (
     <div
       ref={menuRef}
@@ -40,7 +27,7 @@ export default function OptionsMenu({ onClose, onDelete }) {
       <ul className="flex flex-col gap-2 text-secondary-text">
         <li>
           <button
-            onClick={handlePin}
+            onClick={onPin}
             className="flex items-center w-full gap-3 px-4 py-2 text-sm text-left rounded-lg cursor-pointer hover:bg-dark-secondary-bg hover:text-white "
           >
             <Pin size={16} />
@@ -49,7 +36,7 @@ export default function OptionsMenu({ onClose, onDelete }) {
         </li>
         <li>
           <button
-            onClick={handleRemove}
+            onClick={onRename}
             className="flex items-center w-full gap-3 px-4 py-2 text-sm text-left rounded-lg cursor-pointer hover:bg-dark-secondary-bg hover:text-white"
           >
             <Pencil size={16} />

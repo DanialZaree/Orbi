@@ -17,5 +17,11 @@ router.get('/', authMiddleware, chatController.getChatHistory);
 // This route handles sending a new message
 router.post('/', authMiddleware, chatController.sendMessage);
 
+// --- THIS IS THE NEW ROUTE ---
+// When a DELETE request is made to /api/chat/:id, it will run the deleteChatById function
+router.delete('/:id', authMiddleware, chatController.deleteChatById);
+
+router.patch('/:id/rename', authMiddleware, chatController.renameChatById);
+
 module.exports = router;
 

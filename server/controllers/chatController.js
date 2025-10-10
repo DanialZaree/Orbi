@@ -175,3 +175,59 @@ exports.getChatById = async (req, res) => {
   }
 };
 
+exports.deleteChatById = async (req, res) => {
+    try {
+        const { id: chatId } = req.params;
+        const userId = req.user._id.toString();
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ success: false, message: 'Invalid chat ID format.' });
+        }
+
+        const result = await Chat.findOneAndDelete({ 
+            _id: chatId, 
+            userId: userId 
+        });
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Chat not found or you do not have permission to delete it.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Chat deleted successfully.' });
+
+    } catch (error) {
+        console.error("Error deleting chat:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    }
+};
+exports.renameChatById = async (req, res) => {
+    try {
+        const { id: chatId } = req.params;
+        const { newTitle } = req.body; // Get the new title from the request body
+        const userId = req.user._id.toString();
+
+        if (!newTitle) {
+            return res.status(400).json({ success: false, message: 'New title is required.' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ success: false, message: 'Invalid chat ID format.' });
+        }
+
+        const updatedChat = await Chat.findOneAndUpdate(
+            { _id: chatId, userId: userId }, // Find the chat by ID and ensure it belongs to the user
+            { title: newTitle }, // The update to apply
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedChat) {
+            return res.status(404).json({ success: false, message: 'Chat not found or you do not have permission to rename it.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Chat renamed successfully.', chat: updatedChat });
+
+    } catch (error) {
+        console.error("Error renaming chat:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    }
+};
