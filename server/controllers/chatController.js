@@ -216,7 +216,7 @@ exports.renameChatById = async (req, res) => {
 
         const updatedChat = await Chat.findOneAndUpdate(
             { _id: chatId, userId: userId }, // Find the chat by ID and ensure it belongs to the user
-            { title: newTitle }, // The update to apply
+            { $set: { title: newTitle } }, // The update to apply
             { new: true } // Return the updated document
         );
 
