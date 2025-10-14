@@ -3,7 +3,6 @@ import { useAuth } from "./context/AuthContext.jsx";
 import apiClient from "./services/api.js";
 import { useLocation, useRoute } from "wouter";
 import Sidebar from "./components/Sidebar";
-import LoginView from "./components/LoginView";
 import Welcome from "./components/Welcome";
 import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
@@ -106,7 +105,6 @@ export default function App() {
           onNewChat={handleNewChat}
         />
       <main className="relative flex flex-col flex-1 h-full font-sans">
-        <LoginView />
 
         <div className="flex flex-col items-center flex-1 w-full max-w-3xl mx-auto overflow-hidden">
           <div className="flex-1 w-full max-w-3xl py-4 overflow-y-auto chatwindow">

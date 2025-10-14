@@ -8,7 +8,6 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-
 const highlighterPromise = createHighlighter({
   themes: ["tokyo-night"],
   langs: [
@@ -102,69 +101,92 @@ function ShikiCodeBlock({ code, lang }) {
 
 export default function ChatBubble({ message }) {
   const isUser = message.role === "user";
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyAll = () => {
+    const fullText = message.content.map((block) => block.value).join("\n\n");
+    navigator.clipboard.writeText(fullText).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    });
+  };
 
   return (
-    <div
-      className={`flex items-start gap-4 ${
-        isUser ? "justify-end" : "justify-start"
-      }`}
-    >
-      {!isUser && (
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-surface shrink-0">
-          <Bot size={20} />
-        </div>
-      )}
+    <>
       <div
-        className={`relative max-w-xl md:max-w-2xl rounded-2xl px-1 py-1 ${
-          isUser ? "bg-blue-600 rounded-br-xs" : ""
+        className={`flex items-start gap-4 ${
+          isUser ? "justify-end" : "justify-start"
         }`}
       >
-        {message.content?.map((block, index) => {
-          if (block.type === "code") {
-            return (
-              <ShikiCodeBlock
-                key={index}
-                code={block.value}
-                lang={block.language || "plaintext"}
-              />
-            );
-          }
-          if (typeof block.value === "string") {
-            if (!isUser) {
+        {!isUser && (
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-surface shrink-0">
+            <Bot size={20} />
+          </div>
+        )}
+        <div
+          className={`relative max-w-xl md:max-w-2xl rounded-2xl px-1 py-1 ${
+            isUser ? "bg-blue-600 rounded-br-xs" : ""
+          }`}
+        >
+          {message.content?.map((block, index) => {
+            if (block.type === "code") {
               return (
-                <div
+                <ShikiCodeBlock
                   key={index}
-                  className="px-3 py-1 prose-sm prose prose-invert"
-                >
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[
-                      [
-                        rehypeExternalLinks,
-                        { target: "_blank", rel: ["noopener", "noreferrer"] },
-                      ],
-                      rehypeKatex,
-                    ]}
-                  >
-                    {block.value}
-                  </ReactMarkdown>
-                </div>
-              );
-            } else {
-              return (
-                <pre
-                  key={index}
-                  className="px-3 py-1 font-sans text-sm text-white whitespace-pre-wrap"
-                >
-                  {block.value.trim()}
-                  {""}
-                </pre>
+                  code={block.value}
+                  lang={block.language || "plaintext"}
+                />
               );
             }
-          }
-          return null;
-        })}
+            if (typeof block.value === "string") {
+              if (!isUser) {
+                return (
+                  <div
+                    key={index}
+                    className="px-3 py-1 prose-sm prose prose-invert"
+                  >
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[
+                        [
+                          rehypeExternalLinks,
+                          { target: "_blank", rel: ["noopener", "noreferrer"] },
+                        ],
+                        rehypeKatex,
+                      ]}
+                    >
+                      {block.value}
+                    </ReactMarkdown>
+                  </div>
+                );
+              } else {
+                return (
+                  <pre
+                    key={index}
+                    className="px-3 py-1 font-sans text-sm text-white whitespace-pre-wrap"
+                  >
+                    {block.value.trim()}
+                    {""}
+                  </pre>
+                );
+              }
+            }
+            return null;
+          })}
+          {!isUser && (
+        <div className="flex items-center self-start gap-2 px-3">
+          <button
+            onClick={handleCopyAll}
+            className="flex items-center gap-1.5 text-secondary-text hover:text-white text-sm cursor-pointer transition p-1"
+          >
+            {isCopied ? <Check size={16} /> : <Copy size={16} />}
+            <span className="text-xs">{isCopied ? "Copied!" : ""}</span>
+          </button>
+        </div>
+      )}
+        </div>
       </div>
-    </div>
+      
+    </>
   );
 }

@@ -1,32 +1,20 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import SettingsPanel from "../SettingPanel";
 import { useGoogleLogin } from "@react-oauth/google";
 import { FcGoogle } from "react-icons/fc";
-import {
-  User,
-  ChevronRight,
-  X,
-  Sparkles,
-  Lock,
-  Mail,
-  Brain,
-  LogOut,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { User, X, Eye, EyeOff } from "lucide-react";
 
 export default function LoginView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [view, setView] = useState("signIn"); // 'signIn' or 'signUp'
+  const [view, setView] = useState("signIn");
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
-    setView("signIn"); // Always reset to 'Sign In' view when opening/closing
+    setView("signIn");
   };
 
-  // --- IMPORTANT CHANGE HERE: Destructure 'user' from useAuth ---
   const { authToken, login, logout, isLoading, error, user } = useAuth();
-  // --- END IMPORTANT CHANGE ---
 
   const googleLogin = useGoogleLogin({
     flow: "auth-code",
@@ -41,7 +29,6 @@ export default function LoginView() {
   const toggleShowConfirmPassword = () =>
     setShowConfirmPassword(!showConfirmPassword);
 
-  // --- Sub-component for the Sign In form ---
   const SignInForm = () => (
     <div className="relative w-full max-w-md p-8 border bg-dark-secondary-bg rounded-2xl border-border-color bg-surface animate-fade-in">
       <button
@@ -132,7 +119,6 @@ export default function LoginView() {
     </div>
   );
 
-  // --- Sub-component for the Sign Up form ---
   const SignUpForm = () => (
     <div className="relative w-full max-w-md p-8 border rounded-2xl border-border-color bg-surface animate-fade-in bg-dark-secondary-bg">
       <button
@@ -240,127 +226,36 @@ export default function LoginView() {
     </div>
   );
 
-  // --- Sub-component for the Settings Panel ---
-  const SettingsPanel = () => (
-    <div className="flex flex-col w-full max-w-2xl border rounded-2xl border-border-color bg-dark-secondary-bg">
-      <div className="flex flex-row items-center justify-between w-full p-2 px-5 border-b border-border-color">
-        <div className="space-y-1.5 text-center flex flex-row justify-between items-center gap-2 ">
-          <nav className="flex items-center">
-            <div className="flex items-center text-secondary-text">
-              <span className="font-normal text-muted-foreground ">
-                Setting
-              </span>
-              <ChevronRight size={18} className="mt-1" />
-            </div>
-            <div className="flex items-center">
-              <span className="font-bold">
-                <h2 className="p-0 font-medium text-center">Profile</h2>
-              </span>
-            </div>
-          </nav>
-        </div>
-        <button
-          onClick={toggleModal}
-          className="cursor-pointer text-secondary-text hover:text-white"
-          aria-label="close login form"
-        >
-          <X size={18} />
-        </button>
-      </div>
-      <div className="flex flex-row">
-        <div className="w-1/3 p-5">
-          <div className="w-full overflow-auto">
-            <ul className="flex flex-col flex-1 gap-2">
-              <li>
-                <button className="flex flex-row items-center w-full gap-2 px-3 py-2 cursor-pointer bg-dark-third-bg hover:bg-hover-bg/70 rounded-xl">
-                  <User size={16} />
-                  Profile
-                </button>
-              </li>
-              <li>
-                <button
-                  disabled={true}
-                  className="flex flex-row items-center w-full gap-2 px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-hover-bg rounded-xl text-secondary-text disabled:hover:bg-transparent"
-                >
-                  <Sparkles size={16} />
-                  Premium
-                </button>
-              </li>
-              <div className="h-px bg-border-color"></div>
-              <li>
-                <button className="flex flex-row items-center w-full gap-2 px-3 py-2 cursor-pointer hover:bg-hover-bg rounded-xl">
-                  <Brain size={16} />
-                  Memory
-                </button>
-              </li>
-              <li>
-                <button className="flex flex-row items-center w-full gap-2 px-3 py-2 cursor-pointer hover:bg-hover-bg rounded-xl">
-                  <Lock size={16} />
-                  Privacy
-                </button>
-              </li>
-              <li>
-                <button className="flex flex-row items-center w-full gap-2 px-3 py-2 cursor-pointer hover:bg-hover-bg rounded-xl">
-                  <Lock size={16} />
-                  About Us
-                </button>
-              </li>
-              <li>
-                <button className="flex flex-row items-center w-full gap-2 px-3 py-2 cursor-pointer hover:bg-hover-bg rounded-xl">
-                  <Mail size={16} />
-                  Contact Us
-                </button>
-              </li>
-              <li className="mt-10">
-                <button
-                  onClick={logout}
-                  className="box-border flex flex-row items-center w-full gap-2 px-3 py-2 text-red-500 border border-transparent cursor-pointer bg-red-950/20 hover:border hover:border-red-500 rounded-xl"
-                >
-                  <LogOut size={16} />
-                  Log Out
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-        {/* --- IMPORTANT CHANGE HERE: Display user profile information --- */}
-        <div className="w-2/3 p-5">
-          {user ? (
-            <div className="flex flex-col items-center gap-4 text-center h-full justify-center">
-              {user.picture && (
-                <img
-                  src={user.picture}
-                  alt="User Profile"
-                  className="w-24 h-24 rounded-full border-2 border-blue-500 object-cover"
-                />
-              )}
-              <h3 className="text-xl font-bold text-white">{user.name || "User Name"}</h3>
-              <p className="text-sm text-secondary-text">{user.email || "user@example.com"}</p>
-              {/* You can add more profile details here if your 'user' object has them */}
-            </div>
-          ) : (
-            <p className="text-secondary-text">User profile not available.</p>
-          )}
-        </div>
-        {/* --- END IMPORTANT CHANGE --- */}
-      </div>
-    </div>
-  );
-
   return (
     <>
       <button
         onClick={toggleModal}
-        className="absolute z-10 flex items-center justify-center w-10 h-10 border border-solid rounded-full cursor-pointer right-4 top-4 border-white/30 text-white/70 hover:bg-white/10 hover:text-white"
+        className="px-3 py-2 w-full flex items-center gap-1.5 justify cursor-pointer border-white/30 text-white/70  hover:text-white"
         aria-label="Open user menu"
       >
-        <User />
+        {authToken && user ? (
+          <>
+            <img
+              src={
+                `https://ui-avatars.com/api/?name=${user.name}&background=random`
+              }
+              alt={user.name}
+              className="w-5 h-5 rounded-full"
+            />
+            <span className="truncate">{user.name}</span>
+          </>
+        ) : (
+          <>
+            <User size={20} />
+            <span className="truncate">Sign In</span>
+          </>
+        )}
       </button>
 
       {isModalOpen && (
         <div className="absolute inset-0 z-[2] flex items-center justify-center bg-background/10 backdrop-blur-sm">
           {authToken ? (
-            <SettingsPanel />
+            <SettingsPanel user={user} logout={logout} onClose={toggleModal} />
           ) : view === "signIn" ? (
             <SignInForm />
           ) : (

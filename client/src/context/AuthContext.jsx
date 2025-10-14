@@ -29,6 +29,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
+    window.location.href = "/";
   }, []);
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export function AuthProvider({ children }) {
         setUser(response.data.user);
         localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        window.location.href = "/";
       } else {
         setError(response.data.message || "Google login failed.");
       }

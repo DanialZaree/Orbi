@@ -5,6 +5,7 @@ import apiClient from "../../services/api";
 import OptionsMenu from "../optionsMenu";
 import DeleteModal from "../Modal/DeleteModal";
 import RenameModal from "../Modal/RenameModal";
+import LoginView from "../LoginView";
 import {
   EllipsisVertical,
   ChevronLeft,
@@ -221,22 +222,13 @@ export default function Sidebar({
         <div className="flex justify-between gap-3 p-4 mt-auto border-t border-border-color shrink-0">
           {isButtonRendered && (
             <button
-              className={`flex items-center w-full gap-3 px-3 py-2 text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
+              className={`flex items-center w-full gap-3  text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
                       transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
                         isSideOpen ? "grow" : "grow-0 opacity-0"
                       }`}
               aria-label="Send Feedback"
             >
-              <svg
-                className="w-5 h-5 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
-                <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
-              </svg>
-              Send Feedback
+              <LoginView  />
             </button>
           )}
 
