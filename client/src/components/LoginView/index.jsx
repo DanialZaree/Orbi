@@ -228,9 +228,9 @@ export default function LoginView() {
 
   return (
     <>
-      <button
+      <div
         onClick={toggleModal}
-        className="px-3 py-2 w-full flex items-center gap-1.5 justify cursor-pointer border-white/30 text-white/70  hover:text-white"
+        className={`px-3 py-2 w-full flex items-center gap-1.5 justify cursor-pointer border-white/30  ${authToken && user ? "text-white/70  hover:text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
         aria-label="Open user menu"
       >
         {authToken && user ? (
@@ -250,7 +250,7 @@ export default function LoginView() {
             <span className="truncate">Sign In</span>
           </>
         )}
-      </button>
+      </div>
 
       {isModalOpen && (
         <div className="absolute inset-0 z-[2] flex items-center justify-center bg-background/10 backdrop-blur-sm">
