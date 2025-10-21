@@ -4,23 +4,23 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, // Ensures no two users can have the same email
+    unique: true,
     lowercase: true
   },
   password: {
     type: String,
-    required: false // Not required because of Google Auth
+    required: function() { return this.authProvider === 'local'; }
   },
   authProvider: {
     type: String,
     required: true,
-    enum: ['local', 'google'], // Only allows these two values
+    enum: ['local', 'google'],
     default: 'local'
   },
   googleId: {
     type: String,
     unique: true,
-    sparse: true // Allows multiple documents to have a null value
+    sparse: true 
   },
   displayName: {
     type: String
@@ -29,8 +29,8 @@ const userSchema = new mongoose.Schema({
     type: String
   }
 }, {
-  // Automatically adds createdAt and updatedAt fields
   timestamps: true
 });
 
 module.exports = mongoose.model('User', userSchema);
+

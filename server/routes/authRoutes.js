@@ -1,24 +1,31 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController'); // Or wherever your controller is
-const authMiddleware = require('../middleware/authMiddleware'); // A middleware to verify JWT
+const authController = require('../controllers/authController');
+const authMiddleware = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
 
-// Apply a general rate limiter to all requests in this router
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Limit each IP to 20 requests per window
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: 'Too many requests from this IP, please try again after 15 minutes',
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many authentication requests from this IP, please try again after 15 minutes',
 });
 
 router.use(authLimiter);
 
-// Existing Google login route
+
+// Google OAuth
 router.post('/google', authController.googleLogin);
 
-// Protected route to get user profile
-router.get('/me', authMiddleware, authController.getMe);
+// Email & Password (Local)
+router.post('/login', authController.loginWithEmail);
+router.post('/register-otp', authController.requestEmailOTP);
+router.post('/register-verify', authController.verifyEmailAndRegister);
+
+// Protected route to get current user's profile
+router.get('/me', authMiddleware, authController.getCurrentUser);
+
 
 module.exports = router;
+

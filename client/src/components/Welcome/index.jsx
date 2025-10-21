@@ -1,10 +1,10 @@
-import homeVideo from '../../assets/green.mp4';
+import homeVideo from '../../assets/green.webm';
 export default function Welcome() {
     return (
         <div className="self-center text-center">
             <video
                 src={homeVideo}
-                width="320"
+                width="720"
                 autoPlay
                 loop
                 muted
