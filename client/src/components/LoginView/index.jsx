@@ -31,13 +31,13 @@ export default function LoginView() {
 
   const SignInForm = () => (
     <div className="relative w-full max-w-md p-8 border bg-dark-secondary-bg rounded-2xl border-border-color bg-surface animate-fade-in">
-      <button
+      <div
         onClick={toggleModal}
         className="absolute cursor-pointer right-4 top-4 text-secondary-text hover:text-white"
         aria-label="close login form"
       >
         <X size={20} />
-      </button>
+      </div>
       <h2 className="mb-6 text-2xl font-bold text-center text-white">
         Sign In
       </h2>
@@ -67,7 +67,7 @@ export default function LoginView() {
         <div>
           <label
             htmlFor="email"
-            className="block mb-2 text-sm text-secondary-text "
+            className="block mb-2 text-sm text-secondary-text text-left"
           >
             Email
           </label>
@@ -90,7 +90,7 @@ export default function LoginView() {
           </label>
           <button
             onClick={toggleShowPassword}
-            className="absolute z-10 -translate-y-1/2 cursor-pointer text-secondary-text right-4 top-2/3"
+            className="absolute z-10 -translate-y-1/2 cursor-pointer text-secondary-text right-4 top-7/10"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
@@ -134,7 +134,7 @@ export default function LoginView() {
       <button
         onClick={() => googleLogin()}
         disabled={isLoading}
-        className="flex items-center justify-center w-full gap-3 p-3 text-white rounded-lg cursor-pointer bg-dark-third-bg bg-border hover:bg-surface-hover disabled:opacity-50"
+        className="flex items-center justify-center w-full gap-3 p-3 text-white rounded-lg cursor-pointer bg-dark-third-bg hover:bg-surface-hover disabled:opacity-50"
       >
         {isLoading ? (
           "Signing in..."
@@ -157,7 +157,7 @@ export default function LoginView() {
         <div>
           <label
             htmlFor="email-signup"
-            className="block mb-2 text-sm text-secondary-text"
+            className="block mb-2 text-sm text-secondary-text text-left"
           >
             Email
           </label>
@@ -171,13 +171,13 @@ export default function LoginView() {
         <div className="relative">
           <label
             htmlFor="password-signup"
-            className="block mb-2 text-sm text-secondary-text"
+            className="block mb-2 text-sm text-secondary-text text-left"
           >
             Password
           </label>
           <button
             onClick={toggleShowPassword}
-            className="absolute z-10 -translate-y-1/2 cursor-pointer right-4 top-2/3 text-secondary-text"
+            className="absolute z-10 -translate-y-1/2 cursor-pointer right-4 top-7/10 text-secondary-text"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
@@ -185,19 +185,19 @@ export default function LoginView() {
             id="password-signup"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full p-3 tracking-widest text-white border rounded-lg bg-background border-border-color placeholder:text-secondary-text focus:outline-none focus:border-blue-600"
+            className="w-full p-3 tracking-widest text-white border rounded-lg border-border-color placeholder:text-secondary-text focus:outline-none focus:border-blue-600"
           />
         </div>
         <div className="relative">
           <label
             htmlFor="confirm-password-signup"
-            className="block mb-2 text-sm text-secondary-text"
+            className="block mb-2 text-sm text-secondary-text text-left"
           >
             Confirm Password
           </label>
           <button
             onClick={toggleShowConfirmPassword}
-            className="absolute z-10 -translate-y-1/2 cursor-pointer right-4 top-2/3 text-secondary-text"
+            className="absolute z-10 -translate-y-1/2 cursor-pointer right-4 top-7/10 text-secondary-text"
           >
             {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
@@ -205,7 +205,7 @@ export default function LoginView() {
             id="confirm-password-signup"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="w-full p-3 tracking-widest border rounded-lg text-secondary-text bg-background border-border-color placeholder:text-secondary-text focus:outline-none focus:border-blue-600"
+            className="w-full p-3 tracking-widest border rounded-lg text-secondary-text  border-border-color placeholder:text-secondary-text focus:outline-none focus:border-blue-600"
           />
         </div>
         <button className="w-full p-3 font-bold text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700">

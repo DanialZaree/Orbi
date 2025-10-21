@@ -221,7 +221,7 @@ export default function Sidebar({
         </div>
         <div className="flex justify-between gap-3 p-4 mt-auto border-t border-border-color shrink-0">
           {isButtonRendered && (
-            <button
+            <div
               className={`flex items-center w-full gap-3  text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
                       transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
                         isSideOpen ? "grow" : "grow-0 opacity-0"
@@ -229,7 +229,7 @@ export default function Sidebar({
               aria-label="Send Feedback"
             >
               <LoginView  />
-            </button>
+            </div>
           )}
 
           <button
