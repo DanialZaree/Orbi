@@ -33,11 +33,13 @@ exports.googleLogin = async (req, res) => {
         let user = await User.findOneAndUpdate(
             { googleId },
             { 
-                email, 
-                displayName: name,
-                profilePicture: picture,
-                authProvider: 'google',
-                isVerified: true
+                $set: {
+                    email,
+                    displayName: name,
+                    profilePicture: picture,
+                    authProvider: 'google',
+                    isVerified: true
+                }
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
@@ -83,11 +85,11 @@ exports.getCurrentUser = async (req, res) => {
 exports.requestEmailOTP = async (req, res) => {
     try {
         const { email } = req.body;
-        if (!email) {
-            return res.status(400).json({ success: false, message: 'Please provide an email.' });
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ success: false, message: 'Please provide a valid email.' });
         }
 
-        let user = await User.findOne({ email });
+        const user = await User.findOne({ email });
         if (user && user.isVerified && user.authProvider === 'local') {
             return res.status(400).json({ success: false, message: 'A user with this email already exists. Please log in.' });
         }
@@ -96,24 +98,17 @@ exports.requestEmailOTP = async (req, res) => {
         const hashedOtp = await bcrypt.hash(otp, 12);
         const otpExpires = Date.now() + 10 * 60 * 1000; 
 
-        if (user) {
-            // Handle case where user signed up with Google, but is now trying local
-            user.authProvider = 'local'; 
-            user.otp = hashedOtp;
-            user.otpExpires = otpExpires;
-            user.isVerified = false; // Force re-verification
-            await user.save({ validateBeforeSave: true }); // Now validation is good
-        } else {
-            const displayName = email.split('@')[0];
-            user = new User({
-                email,
-                displayName,
+        await User.findOneAndUpdate({ email }, {
+            $set: {
+                authProvider: 'local',
                 otp: hashedOtp,
-                otpExpires,
-                authProvider: 'local'
-            });
-            await user.save(); // This is fine now with your new User model
-        }
+                otpExpires: otpExpires,
+                isVerified: false,
+            },
+            $setOnInsert: {
+                displayName: email.split('@')[0],
+            }
+        }, { upsert: true, setDefaultsOnInsert: true });
 
         // --- REPLACED TRANSPORTER WITH RESEND ---
         await resend.emails.send({
@@ -135,11 +130,11 @@ exports.requestEmailOTP = async (req, res) => {
 exports.verifyEmailAndRegister = async (req, res) => {
     try {
         const { email, password, otp } = req.body;
-        if (!email || !password || !otp) {
-            return res.status(400).json({ success: false, message: 'Email, password, and OTP are required.' });
+        if (!email || typeof email !== 'string' || !password || typeof password !== 'string' || !otp || typeof otp !== 'string') {
+            return res.status(400).json({ success: false, message: 'A valid email, password, and OTP are required.' });
         }
 
-        const user = await User.findOne({ email, otpExpires: { $gt: Date.now() } });
+        let user = await User.findOne({ email, otpExpires: { $gt: Date.now() } });
         if (!user) {
             return res.status(400).json({ success: false, message: 'Invalid OTP or it has expired.' });
         }
@@ -149,11 +144,17 @@ exports.verifyEmailAndRegister = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid OTP.' });
         }
 
-        user.password = await bcrypt.hash(password, 12);
-        user.isVerified = true;
-        user.otp = undefined;
-        user.otpExpires = undefined;
-        await user.save(); // Your User model will now correctly validate the password
+        const hashedPassword = await bcrypt.hash(password, 12);
+        user = await User.findByIdAndUpdate(user._id, {
+            $set: {
+                password: hashedPassword,
+                isVerified: true
+            },
+            $unset: {
+                otp: 1,
+                otpExpires: 1
+            }
+        }, { new: true });
 
         const appToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
@@ -177,8 +178,8 @@ exports.verifyEmailAndRegister = async (req, res) => {
 exports.loginWithEmail = async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ success: false, message: "Please provide email and password." });
+        if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+            return res.status(400).json({ success: false, message: "Please provide a valid email and password." });
         }
 
         const user = await User.findOne({ email, authProvider: 'local' });
