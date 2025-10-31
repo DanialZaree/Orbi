@@ -8,7 +8,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 // Helper to convert Base64 data URI to a Gemini Part object
 function dataUriToGenerativePart(dataUri) {
   try {
-    const match = dataUri.match(/^data:(.*?);base64,(.*)$/);
+    const match = dataUri.match(/^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/);
     if (!match) {
       throw new Error("Invalid data URI format");
     }
@@ -49,6 +49,9 @@ exports.sendMessage = async (req, res) => {
     let currentChat;
 
     if (chatId) {
+      if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return res.status(400).json({ success: false, message: 'Invalid chat ID format.' });
+      }
       currentChat = await Chat.findOne({ _id: chatId, userId: userId });
       if (!currentChat) {
         return res.status(404).json({ success: false, message: "Chat not found." });
@@ -182,7 +185,7 @@ exports.renameChatById = async (req, res) => {
         }
         const updatedChat = await Chat.findOneAndUpdate(
             { _id: chatId, userId: userId },
-            { title: newTitle },
+            { $set: { title: newTitle } },
             { new: true }
         );
         if (!updatedChat) {
