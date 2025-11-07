@@ -210,7 +210,7 @@ export default function App() {
             </Switch>
           </div>
 
-          <div className="w-full shrink-0">
+          <div className="shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
               disabled={!authToken || isLoading}
