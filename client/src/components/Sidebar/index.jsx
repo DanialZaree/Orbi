@@ -138,7 +138,7 @@ export default function Sidebar({
   return (
     <>
       <aside
-        className={`flex flex-col h-screen border-r bg-dark-secondary-bg border-border-color shrink-0
+        className={`flex flex-col h-full border-r bg-dark-secondary-bg border-border-color shrink-0
                transition-all duration-300 ease-in-out ${
                  isSideOpen ? "w-72" : "w-18"
                }`}
