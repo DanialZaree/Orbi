@@ -484,6 +484,11 @@ details{
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   * {
     @apply border-border outline-ring/50;
   }
