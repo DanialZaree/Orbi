@@ -20,22 +20,22 @@
   font-display: swap;
 }
 @font-face {
-  font-family: 'Vazirmatn';
-  src: url('/fonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-Regular.woff2") format("woff2");
   font-weight: 400; /* 400 is 'normal' weight */
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Vazirmatn';
-  src: url('/fonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-Bold.woff2") format("woff2");
   font-weight: 700; /* 700 is 'bold' weight */
   font-style: normal;
   font-display: swap;
 }
 
 @theme {
-  --font-sans: 'Satoshi', 'Vazirmatn';
+  --font-sans: "Satoshi", "Vazirmatn";
   --color-dark-bg: #111418;
   --color-dark-secondary-bg: #1a1d21;
   --color-secondary-text: #9cabba;
@@ -110,7 +110,7 @@ pre::-webkit-scrollbar-thumb {
     scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
   }
 }
-details{
+details {
   direction: ltr !important;
 }
 /* Shiki base styles */
@@ -219,7 +219,7 @@ details{
   color: theme("colors.gray.400");
   border-left-width: 0.25rem;
   border-left-color: theme("colors.border-color");
-  quotes: "\201C""\201D""\2018""\2019";
+  quotes: "\201C" "\201D" "\2018" "\2019";
   margin-top: 1.6em;
   margin-bottom: 1.6em;
   padding-left: 1em;

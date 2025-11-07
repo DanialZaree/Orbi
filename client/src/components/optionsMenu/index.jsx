@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Pin, Trash2, Pencil } from "lucide-react"; // Example icons
 
-export default function OptionsMenu({ onClose, onDelete,onRename, onPin }) {
+export default function OptionsMenu({ onClose, onDelete, onRename, onPin }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -20,15 +20,15 @@ export default function OptionsMenu({ onClose, onDelete,onRename, onPin }) {
   return (
     <div
       ref={menuRef}
-      className="absolute right-0 z-10 w-48 p-1 border rounded-lg shadow-xl top-10 bg-dark-third-bg border-border-color"
+      className="bg-dark-third-bg border-border-color absolute top-10 right-0 z-10 w-48 rounded-lg border p-1 shadow-xl"
       role="menu"
       aria-orientation="vertical"
     >
-      <ul className="flex flex-col gap-2 text-secondary-text">
+      <ul className="text-secondary-text flex flex-col gap-2">
         <li>
           <button
             onClick={onPin}
-            className="flex items-center w-full gap-3 px-4 py-2 text-sm text-left rounded-lg cursor-pointer hover:bg-dark-secondary-bg hover:text-white "
+            className="hover:bg-dark-secondary-bg flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-2 text-left text-sm hover:text-white"
           >
             <Pin size={16} />
             <span>Pin</span>
@@ -37,7 +37,7 @@ export default function OptionsMenu({ onClose, onDelete,onRename, onPin }) {
         <li>
           <button
             onClick={onRename}
-            className="flex items-center w-full gap-3 px-4 py-2 text-sm text-left rounded-lg cursor-pointer hover:bg-dark-secondary-bg hover:text-white"
+            className="hover:bg-dark-secondary-bg flex w-full cursor-pointer items-center gap-3 rounded-lg px-4 py-2 text-left text-sm hover:text-white"
           >
             <Pencil size={16} />
             <span>Rename</span>
@@ -46,7 +46,7 @@ export default function OptionsMenu({ onClose, onDelete,onRename, onPin }) {
         <li>
           <button
             onClick={onDelete}
-            className="box-border flex items-center w-full gap-3 px-4 py-2 text-sm text-left text-red-500 border border-transparent rounded-lg cursor-pointer hover:border bg-red-950/20 hover:border-red-500"
+            className="box-border flex w-full cursor-pointer items-center gap-3 rounded-lg border border-transparent bg-red-950/20 px-4 py-2 text-left text-sm text-red-500 hover:border hover:border-red-500"
           >
             <Trash2 size={16} />
             <span>Delete</span>

@@ -1,7 +1,7 @@
-import axios from 'axios';
+import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: "http://localhost:5000/api",
 });
 
 // --- THIS IS THE FIX (Part 1) ---
@@ -9,7 +9,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Read the token from localStorage on every request
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     if (token) {
       // If the token exists, add it to the header
       config.headers.Authorization = `Bearer ${token}`;
@@ -18,8 +18,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;
-

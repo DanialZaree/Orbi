@@ -11,7 +11,7 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [authToken, setAuthToken] = useState(() =>
-    localStorage.getItem("authToken")
+    localStorage.getItem("authToken"),
   );
   const [user, setUser] = useState(() => {
     try {
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
           logout();
         }
         return Promise.reject(error);
-      }
+      },
     );
     return () => {
       apiClient.interceptors.response.eject(interceptorId);
@@ -89,7 +89,7 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       setError(
-        err.response?.data?.message || "Login failed. Please try again."
+        err.response?.data?.message || "Login failed. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -101,23 +101,26 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post('/auth/login', { email, password });
+      const response = await apiClient.post("/auth/login", { email, password });
       if (response.data.success) {
         handleAuthSuccess(response.data.token, response.data.user);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Please check your credentials.");
+      setError(
+        err.response?.data?.message ||
+          "Login failed. Please check your credentials.",
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const requestOTP = async (email) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post('/auth/register-otp', { email });
-      return response.data; 
+      const response = await apiClient.post("/auth/register-otp", { email });
+      return response.data;
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP.");
       throw err;
@@ -130,7 +133,11 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post('/auth/register-verify', { email, password, otp });
+      const response = await apiClient.post("/auth/register-verify", {
+        email,
+        password,
+        otp,
+      });
       if (response.data.success) {
         handleAuthSuccess(response.data.token, response.data.user);
       }
@@ -141,8 +148,17 @@ export function AuthProvider({ children }) {
     }
   };
 
-
-  const value = { authToken, user, isLoading, error, login, logout, emailLogin, requestOTP, verifyAndRegister };
+  const value = {
+    authToken,
+    user,
+    isLoading,
+    error,
+    login,
+    logout,
+    emailLogin,
+    requestOTP,
+    verifyAndRegister,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -150,4 +166,3 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
-

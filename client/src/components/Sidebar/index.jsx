@@ -21,7 +21,7 @@ export default function Sidebar({
   chatHistory,
   setChatHistory,
 }) {
-  const [isSideOpen, setIsSideOpen] = useState(true);
+  const [isSideOpen, setIsSideOpen] = useState(false);
   const [isButtonRendered, setIsButtonRendered] = useState(isSideOpen);
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,21 +33,6 @@ export default function Sidebar({
   // --- PROBLEM FIX: Added state for the Rename functionality ---
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [itemToRename, setItemToRename] = useState(null);
-
-  // // This useEffect will fetch the initial chat history
-  // useEffect(() => {
-  //   const fetchChatHistory = async () => {
-  //     try {
-  //       const response = await apiClient.get("/chat");
-  //       if (response.data.success) {
-  //         setChatHistory(response.data.chats);
-  //       }
-  //     } catch (error) {
-  //       console.error("Failed to fetch chat history:", error);
-  //     }
-  //   };
-  //   fetchChatHistory();
-  // }, [setChatHistory]); // Dependency array ensures this runs when the setter is available
 
   const openHandle = () => {
     setIsSideOpen(!isSideOpen);
@@ -89,7 +74,7 @@ export default function Sidebar({
 
       // 2. Update the UI instantly by removing the chat from the list
       setChatHistory((prevChats) =>
-        prevChats.filter((chat) => chat._id !== itemToDelete._id)
+        prevChats.filter((chat) => chat._id !== itemToDelete._id),
       );
 
       // 3. If the deleted chat was the active one, navigate to the "new chat" screen
@@ -125,8 +110,8 @@ export default function Sidebar({
       await apiClient.patch(`/chat/${itemToRename._id}/rename`, { newTitle });
       setChatHistory((prev) =>
         prev.map((chat) =>
-          chat._id === itemToRename._id ? { ...chat, title: newTitle } : chat
-        )
+          chat._id === itemToRename._id ? { ...chat, title: newTitle } : chat,
+        ),
       );
     } catch (error) {
       console.error("Failed to rename chat:", error);
@@ -137,18 +122,31 @@ export default function Sidebar({
   };
   return (
     <>
+      <div className="md:none absolute top-4 left-4 z-10">
+        <button
+          onClick={openHandle}
+          className="border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
+          aria-label="Collapse sidebar"
+        >
+          <ChevronLeft
+            size={20}
+            className={`transition-transform duration-300 ${
+              !isSideOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </div>
       <aside
-        className={`flex flex-col h-full border-r bg-dark-secondary-bg border-border-color shrink-0
-               transition-all duration-300 ease-in-out ${
-                 isSideOpen ? "w-72" : "w-18"
-               }`}
+        className={`bg-dark-secondary-bg border-border-color absolute z-20 flex h-full w-0 shrink-0 flex-col border-0 border-r transition-all duration-300 ease-in-out md:relative ${
+          isSideOpen ? "w-72" : "md:w-18"
+        }`}
       >
-        <div className="flex items-center h-16 gap-2 overflow-hidden border-b border-border-color shrink-0">
-          <img src={orbi} alt="Orbi Logo" className="h-10 ml-4 shrink-0" />
+        <div className="border-border-color flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b">
+          <img src={orbi} alt="Orbi Logo" className="ml-4 h-10 shrink-0" />
           <span
             className={`text-2xl font-bold whitespace-nowrap transition-opacity ease-in-out ${
               isSideOpen
-                ? "opacity-100 duration-200 delay-200"
+                ? "opacity-100 delay-200 duration-200"
                 : "opacity-0 duration-100"
             }`}
           >
@@ -160,9 +158,7 @@ export default function Sidebar({
           <nav className="p-4">
             <button
               onClick={onNewChat}
-              className={`flex items-center w-full gap-3 p-2 overflow-hidden text-sm border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
-               transition-all duration-300 ease-in-out
-               ${!isSideOpen ? "justify-start" : "justify-center"}`}
+              className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border p-2 text-sm transition-all duration-300 ease-in-out hover:text-white ${!isSideOpen ? "justify-start" : "justify-center"}`}
             >
               <Plus size={20} className="shrink-0" />
               <span
@@ -176,11 +172,11 @@ export default function Sidebar({
             <div
               className={`transition-opacity ease-in-out ${
                 isSideOpen
-                  ? "opacity-100 duration-200 delay-200"
+                  ? "opacity-100 delay-200 duration-200"
                   : "opacity-0 duration-100"
               }`}
             >
-              <h3 className="px-3 mt-6 mb-2 text-xs font-semibold uppercase text-secondary-text whitespace-nowrap">
+              <h3 className="text-secondary-text mt-6 mb-2 px-3 text-xs font-semibold whitespace-nowrap uppercase">
                 HISTORY
               </h3>
               <ul className="space-y-2">
@@ -189,18 +185,17 @@ export default function Sidebar({
                     <Link
                       href={`/${chat._id}`}
                       onClick={() => onSelectChat(chat._id)}
-                      className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg cursor-pointer group 
-                        ${
-                          activeChatId === chat._id
-                            ? " text-white bg-dark-third-bg"
-                            : "text-secondary-text hover:bg-dark-third-bg hover:text-white"
-                        }`}
+                      className={`group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                        activeChatId === chat._id
+                          ? " bg-dark-third-bg text-white"
+                          : "text-secondary-text hover:bg-dark-third-bg hover:text-white"
+                      }`}
                     >
                       <MessageSquare size={20} className="shrink-0" />
                       <span className="truncate">{chat.title}</span>
                       <button
                         onClick={(e) => handleOptionsToggle(e, index)}
-                        className="hidden ml-auto cursor-pointer group-hover:block hover:text-white"
+                        className="ml-auto hidden cursor-pointer group-hover:block hover:text-white"
                         aria-label="Chat options"
                       >
                         <EllipsisVertical size={20} />
@@ -219,22 +214,21 @@ export default function Sidebar({
             </div>
           </nav>
         </div>
-        <div className="flex justify-between gap-3 p-4 mt-auto border-t border-border-color shrink-0">
+        <div className="border-border-color mt-auto flex shrink-0 justify-between gap-3 border-t p-4">
           {isButtonRendered && (
             <div
-              className={`flex items-center w-full gap-3  text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
-                      transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
-                        isSideOpen ? "grow" : "grow-0 opacity-0"
-                      }`}
+              className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border text-sm font-bold whitespace-nowrap transition-all duration-200 ease-in-out hover:text-white ${
+                isSideOpen ? "grow" : "grow-0 opacity-0"
+              }`}
               aria-label="Send Feedback"
             >
-              <LoginView  />
+              <LoginView />
             </div>
           )}
 
           <button
             onClick={openHandle}
-            className="p-2 ml-auto transition-colors border rounded-lg cursor-pointer border-border-color text-secondary-text hover:text-white hover:bg-dark-third-bg"
+            className="border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft

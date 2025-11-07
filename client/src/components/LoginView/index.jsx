@@ -143,10 +143,10 @@ export default function LoginView() {
     <>
       <div
         onClick={toggleModal}
-        className={`px-3 py-2 w-full flex items-center gap-1.5 justify cursor-pointer border-white/30 	${
+        className={`justify flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 ${
           authToken && user
-            ? "text-white/70 	hover:text-white"
-            : "bg-blue-600 hover:bg-blue-700 text-white"
+            ? "text-white/70 hover:text-white"
+            : "bg-blue-600 text-white hover:bg-blue-700"
         }`}
         aria-label="Open user menu"
       >
@@ -155,7 +155,7 @@ export default function LoginView() {
             <img
               src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
               alt={user.name}
-              className="w-5 h-5 rounded-full"
+              className="h-5 w-5 rounded-full"
             />
             <span className="truncate">{user.name}</span>
           </>
@@ -169,7 +169,7 @@ export default function LoginView() {
 
       {/* --- Modal --- */}
       {isModalOpen && (
-        <div className="absolute inset-0 z-[2] flex items-center justify-center  backdrop-blur-sm">
+        <div className="absolute inset-0 z-[2] flex items-center justify-center backdrop-blur-sm">
           {authToken && user ? (
             <SettingsPanel user={user} logout={logout} onClose={toggleModal} />
           ) : view === "signIn" ? (
