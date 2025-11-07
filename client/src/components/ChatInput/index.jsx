@@ -108,7 +108,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
 
   return (
     // --- ADDED: Wrap everything in a form for proper submission handling ---
-    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="sticky bottom-0 self-end max-w-3xl py-4 mx-auto mt-auto">
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="w-full">
       <div className="max-w-3xl px-4 mx-auto">
         <div
           onPaste={handlePaste}
