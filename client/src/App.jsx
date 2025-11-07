@@ -164,8 +164,8 @@ export default function App() {
         onNewChat={handleNewChat}
       />
       <main className="relative flex flex-col flex-1 h-full font-sans">
-        <div className="flex flex-col items-center flex-1 w-full max-w-3xl mx-auto overflow-hidden">
-          <div className="flex-1 w-full max-w-3xl py-4 overflow-y-auto chatwindow">
+        <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col">
+          <div className="flex-1 overflow-y-auto chatwindow">
             <Switch>
               <Route path="/:chatId">
                 {chatNotFound ? (
@@ -185,7 +185,7 @@ export default function App() {
             </Switch>
           </div>
 
-          <div className="w-full shrink-0">
+          <div className="shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
               disabled={!authToken || isLoading}
