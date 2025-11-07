@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Menu } from "lucide-react";
 import { useAuth } from "./context/AuthContext.jsx";
 import apiClient from "./services/api.js";
 import { useLocation, useRoute, Switch, Route } from "wouter";
@@ -33,6 +34,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
   const [chatNotFound, setChatNotFound] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     if (authToken) {
@@ -156,15 +158,28 @@ export default function App() {
 
   return (
     <div className="relative flex h-full font-sans text-white bg-dark-bg">
-      <Sidebar
-        chatHistory={chatHistory}
-        setChatHistory={setChatHistory}
-        activeChatId={activeChatId}
-        onSelectChat={handleSelectChat}
-        onNewChat={handleNewChat}
-      />
+      <div
+        className={`transition-all duration-300 ease-in-out md:flex ${
+          isMenuOpen ? "flex" : "hidden"
+        }`}
+      >
+        <Sidebar
+          chatHistory={chatHistory}
+          setChatHistory={setChatHistory}
+          activeChatId={activeChatId}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+        />
+      </div>
       <main className="relative flex flex-col flex-1 h-full font-sans">
         <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col">
+          <button
+            className="absolute top-4 right-4 md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Menu"
+          >
+            <Menu size={24} />
+          </button>
           <div className="flex-1 overflow-y-auto chatwindow">
             <Switch>
               <Route path="/:chatId">

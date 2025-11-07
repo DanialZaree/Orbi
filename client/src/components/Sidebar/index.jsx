@@ -22,9 +22,12 @@ export default function Sidebar({
   setChatHistory,
 }) {
   const [isSideOpen, setIsSideOpen] = useState(true);
-  const [isButtonRendered, setIsButtonRendered] = useState(isSideOpen);
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openHandle = () => {
+    setIsSideOpen(!isSideOpen);
+  };
 
   // --- PROBLEM FIX: Renamed for clarity ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -49,30 +52,11 @@ export default function Sidebar({
   //   fetchChatHistory();
   // }, [setChatHistory]); // Dependency array ensures this runs when the setter is available
 
-  const openHandle = () => {
-    setIsSideOpen(!isSideOpen);
-  };
-
   const handleOptionsToggle = (e, index) => {
     e.preventDefault();
     e.stopPropagation();
     setOpenMenuIndex(openMenuIndex === index ? null : index);
   };
-
-  useEffect(() => {
-    let timer;
-    if (isSideOpen) {
-      setIsButtonRendered(true);
-    } else {
-      setOpenMenuIndex(null);
-      timer = setTimeout(() => {
-        setIsButtonRendered(false);
-      }, 150);
-    }
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [isSideOpen]);
 
   const handleDeleteRequest = (chat) => {
     setItemToDelete(chat);
@@ -138,10 +122,10 @@ export default function Sidebar({
   return (
     <>
       <aside
-        className={`flex flex-col h-full border-r bg-dark-secondary-bg border-border-color shrink-0
+        className={`flex-col h-full border-r bg-dark-secondary-bg border-border-color shrink-0
                transition-all duration-300 ease-in-out ${
                  isSideOpen ? "w-72" : "w-18"
-               }`}
+               } hidden md:flex`}
       >
         <div className="flex items-center h-16 gap-2 overflow-hidden border-b border-border-color shrink-0">
           <img src={orbi} alt="Orbi Logo" className="h-10 ml-4 shrink-0" />
@@ -220,18 +204,15 @@ export default function Sidebar({
           </nav>
         </div>
         <div className="flex justify-between gap-3 p-4 mt-auto border-t border-border-color shrink-0">
-          {isButtonRendered && (
-            <div
-              className={`flex items-center w-full gap-3  text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
-                      transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
-                        isSideOpen ? "grow" : "grow-0 opacity-0"
-                      }`}
-              aria-label="Send Feedback"
-            >
-              <LoginView  />
-            </div>
-          )}
-
+          <div
+            className={`flex items-center w-full gap-3  text-sm font-bold border rounded-lg cursor-pointer text-secondary-text border-border-color hover:text-white hover:bg-dark-third-bg
+                    transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${
+                      isSideOpen ? "grow" : "grow-0 opacity-0"
+                    }`}
+            aria-label="Send Feedback"
+          >
+            <LoginView />
+          </div>
           <button
             onClick={openHandle}
             className="p-2 ml-auto transition-colors border rounded-lg cursor-pointer border-border-color text-secondary-text hover:text-white hover:bg-dark-third-bg"
