@@ -155,7 +155,7 @@ export default function App() {
   }, [activeChatId, setLocation]);
 
   return (
-    <div className="relative flex h-screen font-sans text-white bg-dark-bg">
+    <div className="relative flex h-full font-sans text-white bg-dark-bg">
       <Sidebar
         chatHistory={chatHistory}
         setChatHistory={setChatHistory}
