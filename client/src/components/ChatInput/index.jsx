@@ -111,7 +111,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
     <form
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className="sticky bottom-0 mx-auto mt-auto max-w-3xl self-end py-4"
+      className="sticky bottom-0 mx-auto mt-auto w-full self-end py-4"
     >
       <div className="mx-auto max-w-3xl px-4">
         <div
