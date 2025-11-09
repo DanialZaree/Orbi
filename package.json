@@ -5,10 +5,9 @@
   "scripts": {
     "start-server": "cd server && npm start",
     "start-client": "cd client && npm run dev",
-    "build": "vite build",
-    "vercel-build": "npm run build"
+    "build": "cd client && npm run build",
+    "vercel-build": "cd client && npm install && npm run build"
   },
-
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
