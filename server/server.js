@@ -8,9 +8,12 @@ const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000; // <- REMOVED: Vercel handles the port
 
 // --- MIDDLEWARE ---
+// This CORS rule is fine. It allows your local frontend to talk to
+// your local backend. In production, requests will be same-origin
+// (due to vercel.json) and won't be blocked by CORS.
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json({ limit: '10mb' }));
 
@@ -33,6 +36,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 
 // --- START THE SERVER ---
+/*
+REMOVED THIS BLOCK:
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+*/
+
+// --- EXPORT THE APP FOR VERCEL ---
+// This is the new line Vercel needs to run your app
+// as a serverless function.
+module.exports = app;
