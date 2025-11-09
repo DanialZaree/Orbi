@@ -5,7 +5,8 @@
   "scripts": {
     "start-server": "cd server && npm start",
     "start-client": "cd client && npm run dev",
-    "dev": "concurrently \"npm run start-server\" \"npm run start-client\""
+    "build": "vite build",
+    "vercel-build": "npm run build"
   },
 
   "devDependencies": {
