@@ -121,10 +121,6 @@ export default function ChatBubble({ message, isLastMessage }) {
           isUser ? "rounded-br-xs bg-blue-600" : "bg-surface"
         }`}
       >
-        {/* --- THIS IS THE FIX ---
-            This logic now applies to BOTH user and assistant messages,
-            ensuring images, code, and text are all rendered correctly.
-        */}
         {message.content?.map((block, index) => {
           // 1. Render Code Blocks
           if (block.type === "code") {
