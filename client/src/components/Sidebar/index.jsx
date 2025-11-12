@@ -152,6 +152,18 @@ export default function Sidebar({
           >
             Orbi
           </span>
+        <button
+            onClick={openHandle}
+            className="m-4 border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
+            aria-label="Collapse sidebar"
+          >
+            <ChevronLeft
+              size={20}
+              className={`transition-transform duration-300 ${
+                !isSideOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
         </div>
 
         <div className="flex-1 overflow-x-hidden overflow-y-auto">
@@ -214,7 +226,7 @@ export default function Sidebar({
             </div>
           </nav>
         </div>
-        <div className="border-border-color mt-auto flex shrink-0 justify-between gap-3 border-t p-4">
+        <div className={`border-border-color mt-auto flex shrink-0 justify-between gap-3  p-4 ${!isSideOpen ? 'border-0':'border-t'}`}>
           {isButtonRendered && (
             <div
               className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border text-sm font-bold whitespace-nowrap transition-all duration-200 ease-in-out hover:text-white ${
@@ -228,7 +240,7 @@ export default function Sidebar({
 
           <button
             onClick={openHandle}
-            className="border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
+            className="max-md:hidden border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft
