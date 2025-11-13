@@ -138,7 +138,7 @@ export default function Sidebar({
       </div>
       <aside
         className={`bg-dark-secondary-bg border-border-color absolute z-20 flex h-full w-0 shrink-0 flex-col border-0 border-r transition-all duration-300 ease-in-out md:relative ${
-          isSideOpen ? "w-72 " : "border-r-0"
+          isSideOpen ? "w-72 " : "md:w-18 border-r-0"
         }`}
       >
         <div className="border-border-color flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b">
