@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import orbi from "../../assets/orbi.png";
+import orbi from "../../assets/orbi.webp";
 import apiClient from "../../services/api";
 import OptionsMenu from "../optionsMenu";
 import DeleteModal from "../Modal/DeleteModal";
