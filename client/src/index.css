@@ -3,8 +3,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-body{
-  background:#111418;
+body {
+  background: #111418;
 }
 
 @font-face {

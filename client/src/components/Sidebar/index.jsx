@@ -138,7 +138,7 @@ export default function Sidebar({
       </div>
       <aside
         className={`bg-dark-secondary-bg border-border-color absolute z-20 flex h-full w-0 shrink-0 flex-col border-0 border-r transition-all duration-300 ease-in-out md:relative ${
-          isSideOpen ? "w-72 " : "md:w-18 border-r-0"
+          isSideOpen ? "w-72 " : "border-r-0 md:w-18"
         }`}
       >
         <div className="border-border-color flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b">
@@ -152,9 +152,9 @@ export default function Sidebar({
           >
             Orbi
           </span>
-        <button
+          <button
             onClick={openHandle}
-            className="m-4 border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
+            className="border-border-color text-secondary-text hover:bg-dark-third-bg m-4 ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft
@@ -226,7 +226,9 @@ export default function Sidebar({
             </div>
           </nav>
         </div>
-        <div className={`border-border-color mt-auto flex shrink-0 justify-between gap-3  p-4 ${!isSideOpen ? 'border-0':'border-t'}`}>
+        <div
+          className={`border-border-color mt-auto flex shrink-0 justify-between gap-3 p-4 ${!isSideOpen ? "border-0" : "border-t"}`}
+        >
           {isButtonRendered && (
             <div
               className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border text-sm font-bold whitespace-nowrap transition-all duration-200 ease-in-out hover:text-white ${
@@ -240,7 +242,7 @@ export default function Sidebar({
 
           <button
             onClick={openHandle}
-            className="max-md:hidden border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
+            className="border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white max-md:hidden"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft

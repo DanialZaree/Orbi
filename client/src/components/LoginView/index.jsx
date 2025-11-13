@@ -143,7 +143,7 @@ export default function LoginView() {
     <>
       <div
         onClick={toggleModal}
-        className={` justify flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 ${
+        className={`justify flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 ${
           authToken && user
             ? "text-white/70 hover:text-white"
             : "bg-blue-600 text-white hover:bg-blue-700"
