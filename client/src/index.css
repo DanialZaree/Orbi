@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+body{
+  background:#111418;
+}
+
 @font-face {
   font-family: "Satoshi";
   src: url("/fonts/Satoshi-Regular.woff2") format("woff2");
