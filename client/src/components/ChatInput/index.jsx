@@ -169,7 +169,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
             )}
           </div>
           <textarea
-            className="placeholder:text-secondary-text max-h-40 w-full resize-none bg-transparent px-3 py-2 leading-6 break-words text-white focus:outline-0"
+            className="placeholder:text-secondary-text max-h-40 w-full resize-none bg-transparent px-3 py-2 leading-6 wrap-break-word text-white focus:outline-0"
             placeholder="Ask ORBI :)"
             onChange={handleChange}
             value={text}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import TopNav from "../TopNav";
 import { Link } from "wouter";
 import orbi from "../../assets/orbi.webp";
 import apiClient from "../../services/api";
@@ -122,20 +123,7 @@ export default function Sidebar({
   };
   return (
     <>
-      <div className="md:none absolute top-4 left-4 z-10">
-        <button
-          onClick={openHandle}
-          className="border-border-color text-secondary-text hover:bg-dark-third-bg ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
-          aria-label="Collapse sidebar"
-        >
-          <ChevronLeft
-            size={20}
-            className={`transition-transform duration-300 ${
-              !isSideOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      </div>
+    <TopNav isSideOpen={isSideOpen} openHandle={openHandle} />
       <aside
         className={`bg-dark-secondary-bg border-border-color absolute z-20 flex h-full w-0 shrink-0 flex-col border-0 border-r transition-all duration-300 ease-in-out md:relative ${
           isSideOpen ? "w-72 " : "border-r-0 md:w-18"
@@ -227,7 +215,7 @@ export default function Sidebar({
           </nav>
         </div>
         <div
-          className={`border-border-color mt-auto flex shrink-0 justify-between gap-3 p-4 ${!isSideOpen ? "border-0" : "border-t"}`}
+          className={`border-border-color mt-auto flex shrink-0 justify-between gap-3 p-4 ${!isSideOpen ? "md:border-t" : "border-t"}`}
         >
           {isButtonRendered && (
             <div
