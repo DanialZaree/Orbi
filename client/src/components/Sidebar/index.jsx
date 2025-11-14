@@ -70,33 +70,28 @@ export default function Sidebar({
     if (!itemToDelete) return;
 
     try {
-      // 1. Call the new DELETE API endpoint on the backend
       await apiClient.delete(`/chat/${itemToDelete._id}`);
-
-      // 2. Update the UI instantly by removing the chat from the list
       setChatHistory((prevChats) =>
         prevChats.filter((chat) => chat._id !== itemToDelete._id),
       );
-
-      // 3. If the deleted chat was the active one, navigate to the "new chat" screen
       if (activeChatId === itemToDelete._id) {
         onNewChat();
       }
     } catch (error) {
       console.error("Failed to delete chat:", error);
-      // Optionally, show an error notification to the user
     } finally {
-      // 4. Close the modal and clear the state
       setIsModalOpen(false);
       setItemToDelete(null);
     }
   };
+  const activeChat = chatHistory.find((chat) => chat._id === activeChatId);
+  const activeChatTitle = activeChat ? activeChat.title : null;
   const handleRenameRequest = (chat) => {
     setItemToRename(chat);
     setIsRenameModalOpen(true);
     setOpenMenuIndex(null);
   };
-  // --- PROBLEM FIX: Added handler to confirm and execute the rename ---
+
   const handleConfirmRename = async (newTitle) => {
     if (
       !itemToRename ||
@@ -123,7 +118,7 @@ export default function Sidebar({
   };
   return (
     <>
-    <TopNav isSideOpen={isSideOpen} openHandle={openHandle} />
+    <TopNav isSideOpen={isSideOpen} openHandle={openHandle} activeChatTitle={activeChatTitle}/>
       <aside
         className={`bg-dark-secondary-bg border-border-color absolute z-20 flex h-full w-0 shrink-0 flex-col border-0 border-r transition-all duration-300 ease-in-out md:relative ${
           isSideOpen ? "w-72 " : "border-r-0 md:w-18"
