@@ -1,3 +1,10 @@
+import {
+  EllipsisVertical,
+  ChevronLeft,
+  MessageSquare,
+  Plus,
+} from "lucide-react";
+
 export default function TopNav({ isSideOpen, openHandle }) {
   return (
     <div className="md:none absolute top-4 left-4 z-10">
