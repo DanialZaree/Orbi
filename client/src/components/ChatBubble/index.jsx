@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bot, Copy, Check, Link as LinkIcon, ChevronDown } from "lucide-react";
+import orbi from "../../assets/orbi.webp";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeExternalLinks from "rehype-external-links";
@@ -107,18 +108,18 @@ export default function ChatBubble({ message, isLastMessage }) {
 
   return (
     <div
-      className={`flex items-start gap-4 ${
+      className={`flex items-start gap-4 overflow-hidden ${
         isUser ? "justify-end" : "justify-start"
       }`}
     >
       {!isUser && (
         <div className="bg-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-          <Bot size={20} />
+          <img src={orbi} alt="Orbi Logo" className="h-8" />
         </div>
       )}
       <div
         className={`relative max-w-xl rounded-2xl px-1 py-1 md:max-w-2xl ${
-          isUser ? "rounded-br-xs bg-blue-600" : "bg-surface"
+          isUser ? "rounded-br-xs bg-blue-700" : "bg-surface"
         }`}
       >
         {message.content?.map((block, index) => {

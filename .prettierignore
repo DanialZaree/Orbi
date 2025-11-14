@@ -1,0 +1,7 @@
+node_modules
+client/dist
+server/dist
+build
+out
+*.lock
+*.min.js
