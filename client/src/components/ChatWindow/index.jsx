@@ -31,7 +31,7 @@ export default function ChatWindow({ messages, isLoading }) {
       ref={chatContainerRef}
       className="w-full flex-1 overflow-y-auto p-6 pt-12"
     >
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div class="mx-auto md:max-w-2xl w-full space-y-6 ">
         {messages &&
           messages.map((msg, index) => (
             <ChatBubble key={index} message={msg} />

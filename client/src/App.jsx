@@ -188,9 +188,9 @@ export default function App() {
         onSelectChat={handleSelectChat}
         onNewChat={handleNewChat}
       />
-      <main className="relative flex h-full flex-1 flex-col font-sans">
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center overflow-hidden">
-          <div className="chatwindow w-full max-w-3xl flex-1 overflow-y-auto py-4">
+      <main className="relative flex h-full w-full flex-1 flex-col font-sans">
+        <div className="mx-auto flex w-full  flex-1 flex-col items-center overflow-hidden">
+          <div className="chatwindow w-full  flex-1 overflow-y-auto py-4">
             <Switch>
               <Route path="/:chatId">
                 {chatNotFound ? (

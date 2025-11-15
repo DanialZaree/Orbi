@@ -78,7 +78,7 @@ function ShikiCodeBlock({ code, lang }) {
   return (
     <details
       open
-      className="group border-border-color group relative my-4 w-2xl overflow-hidden rounded-lg border"
+      className="group border-border-color group relative my-4 w-full overflow-hidden rounded-lg border"
     >
       <summary className="border-border-color flex items-center justify-between border-b bg-[#1a1b26] px-3 py-1.5">
         <div className="ajab flex items-center gap-2">
@@ -108,18 +108,18 @@ export default function ChatBubble({ message, isLastMessage }) {
 
   return (
     <div
-      className={`flex items-start gap-4 overflow-hidden ${
+      className={`flex w-full items-start gap-4 overflow-hidden max-sm:gap-1 ${
         isUser ? "justify-end" : "justify-start"
       }`}
     >
       {!isUser && (
-        <div className="bg-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-          <img src={orbi} alt="Orbi Logo" className="h-8" />
+        <div className="bg-surface flex shrink-0 items-center justify-center rounded-full max-sm:hidden">
+          <img src={orbi} alt="Orbi Logo" className="mt-2 h-8 max-sm:h-6" />
         </div>
       )}
       <div
-        className={`relative max-w-xl rounded-2xl px-1 py-1 md:max-w-2xl ${
-          isUser ? "rounded-br-xs bg-blue-700" : "bg-surface"
+        className={`relative max-w-[85%] rounded-2xl px-1 py-1 wrap-break-word ${
+          isUser ? "rounded-br-xs bg-blue-700/55" : "bg-surface"
         }`}
       >
         {message.content?.map((block, index) => {
@@ -152,7 +152,7 @@ export default function ChatBubble({ message, isLastMessage }) {
             return (
               <div
                 key={index}
-                className={`prose-sm prose prose-invert px-3 py-1`}
+                className={`prose-sm prose prose-invert px-2 py-1`}
                 dir={isRtlText ? "rtl" : "ltr"}
               >
                 {/* We still apply the typing effect for the last AI message */}
