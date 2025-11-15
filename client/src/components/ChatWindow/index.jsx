@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import ChatBubble from "../ChatBubble";
+import { SpinnerCustom } from "../ui/spinner";
 
 export default function ChatWindow({ messages, isLoading }) {
   const messagesEndRef = useRef(null);
@@ -21,7 +22,7 @@ export default function ChatWindow({ messages, isLoading }) {
   if (isLoading && (!messages || messages.length === 0)) {
     return (
       <div className="text-text-muted flex h-full items-center justify-center">
-        Loading chat...
+        <SpinnerCustom /> 
       </div>
     );
   }
