@@ -141,7 +141,7 @@ export default function ChatBubble({ message, isLastMessage }) {
                 key={index}
                 src={block.value} // This will be the blob: or data: URL
                 alt="User uploaded content"
-                className="my-2 max-h-[450px] max-w-[600px] rounded-lg object-contain"
+                className=" max-h-[450px] max-w-[600px] max-sm:max-w-full rounded-lg object-contain"
               />
             );
           }
