@@ -141,11 +141,22 @@ export default function ChatBubble({ message, isLastMessage }) {
                 key={index}
                 src={block.value} // This will be the blob: or data: URL
                 alt="User uploaded content"
-                className=" max-h-[450px] max-w-[600px] max-sm:max-w-full rounded-lg object-contain"
+                className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
               />
             );
           }
-
+          if (block.type === "video") {
+            return (
+              <video
+                key={index}
+                src={block.value} // This will be the blob: or data: URL
+                controls
+                className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
+              >
+                Your browser does not support the video tag.
+              </video>
+            );
+          }
           // 3. Render Text Blocks (and skip empty text)
           if (typeof block.value === "string" && block.value.trim() !== "") {
             const isRtlText = isRTL(block.value);

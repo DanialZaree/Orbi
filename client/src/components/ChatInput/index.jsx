@@ -208,7 +208,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
                 <Mic />
               </button>
               <button
-                type="submit" // --- ADDED: type="submit" to trigger form's onSubmit ---
+                type="submit" // --- ADDED: type="submit" to trigger form's onSubmit --- just kidding
                 className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Send message"
                 disabled={disabled}

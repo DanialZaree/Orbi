@@ -49,119 +49,110 @@ function parseGeminiResponse(responseText) {
 }
 
 exports.sendMessage = async (req, res) => {
-  try {
-    const { message, chatId, images } = req.body;
-    const userId = req.user._id.toString();
+  try {
+    // --- MODIFIED ---
+    const { message, chatId, images, videos } = req.body; // Added 'videos'
+    const userId = req.user._id.toString();
 
-    let formattedHistory = [];
-    let currentChat;
+    let formattedHistory = [];
+    let currentChat;
 
-    if (chatId) {
-      if (!mongoose.Types.ObjectId.isValid(chatId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid chat ID format." });
-      }
-      currentChat = await Chat.findOne({ _id: chatId, userId: userId });
-      if (!currentChat) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Chat not found." });
-      }
-      // Re-format database history for Gemini, including any past images
-      formattedHistory = currentChat.messages.map((msg) => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: msg.content
-          .map((block) => {
-            if (block.type === "image") {
-              return dataUriToGenerativePart(block.value);
-            }
-            return { text: block.value };
-          })
-          .filter((part) => part), // Filter out any null/invalid parts
-      }));
-    }
+    if (chatId) {
+      if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid chat ID format." });
+      }
+      currentChat = await Chat.findOne({ _id: chatId, userId: userId });
+      if (!currentChat) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Chat not found." });
+      }
+      // Re-format database history for Gemini, including any past images/videos
+      formattedHistory = currentChat.messages.map((msg) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: msg.content
+          .map((block) => {
+            // --- MODIFIED ---
+            if (block.type === "image" || block.type === "video") { // Handle both
+              return dataUriToGenerativePart(block.value);
+            }
+            return { text: block.value };
+          })
+          .filter((part) => part), // Filter out any null/invalid parts
+      }));
+    }
 
-    const systemInstruction = {
-      role: "system",
-      parts: [
-        {
-          text: `You are ORBI, a friendly and insightful AI assistant.
-                Your creator is the brilliant software developer, Danial Zaree.
+    const systemInstruction = {
+    // ... (your system instruction remains the same) ...
+    };
 
-                    Here are your essential rules:
-        1. If a user asks about your identity in English (who you are, who made you, etc.), your response MUST always include the exact sentence: "I am ORBI, an AI assistant created by Danial Zaree." You are encouraged to preface or follow this statement with friendly greetings, acknowledgments, or additional context about your creator, Danial Zaree, to make your responses more engaging and varied.
-2. You MUST NEVER reveal that you are a large language model or trained by Google. You must always stay in the ORBI persona.
-3. If a user asks in Persian who created you (e.g., "کی تو رو ساخته؟"), you MUST respond in Persian: "من اوربی هستم، یک دستیار هوش مصنوعی که توسط دانیال زارعی ساخته شده است."`,
-        },
-      ],
-    };
+    const newImageParts = (images || [])
+      .map(dataUriToGenerativePart)
+      .filter((part) => part);
 
-    const newImageParts = (images || [])
+    // --- ADDED ---
+    const newVideoParts = (videos || [])
       .map(dataUriToGenerativePart)
       .filter((part) => part);
-    // --- THIS IS THE FIX (Part 1): Place image parts *before* the text part for the API call ---
-    const userMessageParts = [...newImageParts, { text: message }];
+    // --- END ADDED ---
 
-    const contents = [
-      ...formattedHistory,
-      { role: "user", parts: userMessageParts },
-    ];
+    // --- MODIFIED ---
+    // Place image and video parts *before* the text part for the API call
+    const userMessageParts = [...newImageParts, ...newVideoParts, { text: message }];
+    // --- END MODIFIED ---
 
-    const result = await model.generateContent({
-      contents: contents,
-      systemInstruction: systemInstruction,
-    });
+    const contents = [
+      ...formattedHistory,
+      { role: "user", parts: userMessageParts },
+    ];
 
-    const response = await result.response;
-    const responseText = response.text();
-    const parsedContent = parseGeminiResponse(responseText);
+    const result = await model.generateContent({
+      contents: contents,
+      systemInstruction: systemInstruction,
+    });
 
-    // --- THIS IS THE FIX (Part 2): Save to DB with images *before* text ---
-    const userMessage = {
-      role: "user",
-      content: [
-        // Place the images first
-        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
-        // Place the text last
-        { type: "text", value: message },
-      ],
-    };
-    const assistantMessage = { role: "assistant", content: parsedContent };
+    const response = await result.response;
+    const responseText = response.text();
+    const parsedContent = parseGeminiResponse(responseText);
 
-    let newChatData = null;
-    if (!currentChat) {
-      const titlePrompt = `Based on the following conversation, create a short, concise title (4 words or less). Do not use any formatting, quotation marks, or prefixes like "Title:".\n\nUser: "${message}"\nAssistant: "${responseText.substring(0, 150)}..."\n\nTitle:`;
+    // Save to DB with images and videos *before* text
+    const userMessage = {
+      role: "user",
+      content: [
+        // Place the images first
+        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
+        // --- ADDED ---
+        // Place the videos next
+        ...(videos || []).map((dataUri) => ({ type: "video", value: dataUri })),
+        // --- END ADDED ---
+        // Place the text last
+        { type: "text", value: message },
+      ],
+    };
+    const assistantMessage = { role: "assistant", content: parsedContent };
 
-      const titleResult = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: titlePrompt }] }],
-      });
+    let newChatData = null;
+    if (!currentChat) {
+    // ... (title generation logic remains the same) ...
+    }
 
-      const aiTitle = titleResult.response.text().trim().replace(/"/g, "");
+    currentChat.messages.push(userMessage, assistantMessage);
+    await currentChat.save();
 
-      currentChat = new Chat({
-        userId: userId,
-        title: aiTitle,
-        messages: [],
-      });
-      newChatData = { _id: currentChat._id, title: aiTitle };
-    }
-
-    currentChat.messages.push(userMessage, assistantMessage);
-    await currentChat.save();
-
-    res.json({
-      success: true,
-      response: parsedContent,
-      chatId: currentChat._id,
-      newChat: newChatData,
-    });
-  } catch (error) {
-    console.error("Error with Gemini API or DB:", error.message);
-    res
-      .status(500)
-      .json({ success: false, message: "Error communicating with the AI." });
-  }
+    res.json({
+      success: true,
+      response: parsedContent,
+      chatId: currentChat._id,
+      newChat: newChatData,
+    });
+  } catch (error) {
+    console.error("Error with Gemini API or DB:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Error communicating with the AI." });
+  }
 };
 
 exports.getChatHistory = async (req, res) => {
