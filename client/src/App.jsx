@@ -89,14 +89,14 @@ export default function App() {
     async ({ text, files }) => {
       // 1. Create temporary "blob" URLs for the UI
       const filePreviews = files.map((file) => ({
-        type: "image",
+        type: file.type.startsWith("video/") ? "video" : "image",
         value: URL.createObjectURL(file),
       }));
 
       // 2. Create a list of new messages to add to the UI
       const newUIMessages = [];
 
-      // If there are images, create an image-only message
+      // If there are images or videos, create a media-only message
       if (filePreviews.length > 0) {
         newUIMessages.push({
           role: "user",
@@ -121,15 +121,26 @@ export default function App() {
 
       try {
         // 5. Convert files to Base64 for the API
-        const fileDataUris = await Promise.all(
-          files.map((file) => fileToDataUri(file)),
+        const imageFiles = files.filter((file) =>
+          file.type.startsWith("image/"),
+        );
+        const videoFiles = files.filter((file) =>
+          file.type.startsWith("video/"),
+        );
+
+        const imageDataUris = await Promise.all(
+          imageFiles.map((file) => fileToDataUri(file)),
+        );
+        const videoDataUris = await Promise.all(
+          videoFiles.map((file) => fileToDataUri(file)),
         );
 
         // 6. Send the API request (this logic is the same)
         const response = await apiClient.post("/chat", {
           message: text,
           chatId: activeChatId,
-          images: fileDataUris,
+          images: imageDataUris,
+          videos: videoDataUris,
         });
 
         const newChatId = response.data.chatId;

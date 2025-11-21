@@ -49,12 +49,11 @@ function parseGeminiResponse(responseText) {
 }
 
 exports.sendMessage = async (req, res) => {
-  try {
-    // --- MODIFIED ---
-    const { message, chatId, images, videos } = req.body; // Added 'videos'
-    const userId = req.user._id.toString();
+  try {
+    const { message, chatId, images, videos } = req.body;
+    const userId = req.user._id.toString();
 
-    let formattedHistory = [];
+    let formattedHistory = [];
     let currentChat;
 
     if (chatId) {
@@ -69,68 +68,65 @@ exports.sendMessage = async (req, res) => {
           .status(404)
           .json({ success: false, message: "Chat not found." });
       }
-      // Re-format database history for Gemini, including any past images/videos
-      formattedHistory = currentChat.messages.map((msg) => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: msg.content
-          .map((block) => {
-            // --- MODIFIED ---
-            if (block.type === "image" || block.type === "video") { // Handle both
-              return dataUriToGenerativePart(block.value);
-            }
-            return { text: block.value };
-          })
-          .filter((part) => part), // Filter out any null/invalid parts
-      }));
+      // Re-format database history for Gemini, including any past images/videos
+      formattedHistory = currentChat.messages.map((msg) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: msg.content
+          .map((block) => {
+            if (block.type === "image" || block.type === "video") {
+              return dataUriToGenerativePart(block.value);
+            }
+            return { text: block.value };
+          })
+          .filter((part) => part), // Filter out any null/invalid parts
+      }));
     }
 
     const systemInstruction = {
     // ... (your system instruction remains the same) ...
     };
 
-    const newImageParts = (images || [])
-      .map(dataUriToGenerativePart)
-      .filter((part) => part);
+    const newImageParts = (images || [])
+      .map(dataUriToGenerativePart)
+      .filter((part) => part);
 
-    // --- ADDED ---
     const newVideoParts = (videos || [])
       .map(dataUriToGenerativePart)
       .filter((part) => part);
-    // --- END ADDED ---
 
-    // --- MODIFIED ---
-    // Place image and video parts *before* the text part for the API call
-    const userMessageParts = [...newImageParts, ...newVideoParts, { text: message }];
-    // --- END MODIFIED ---
+    // Place image and video parts *before* the text part for the API call
+    const userMessageParts = [
+      ...newImageParts,
+      ...newVideoParts,
+      { text: message },
+    ];
 
-    const contents = [
-      ...formattedHistory,
-      { role: "user", parts: userMessageParts },
-    ];
+    const contents = [
+      ...formattedHistory,
+      { role: "user", parts: userMessageParts },
+    ];
 
-    const result = await model.generateContent({
-      contents: contents,
-      systemInstruction: systemInstruction,
-    });
+    const result = await model.generateContent({
+      contents: contents,
+      systemInstruction: systemInstruction,
+    });
 
-    const response = await result.response;
-    const responseText = response.text();
-    const parsedContent = parseGeminiResponse(responseText);
+    const response = await result.response;
+    const responseText = response.text();
+    const parsedContent = parseGeminiResponse(responseText);
 
-    // Save to DB with images and videos *before* text
-    const userMessage = {
-      role: "user",
-      content: [
-        // Place the images first
-        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
-        // --- ADDED ---
+    // Save to DB with images and videos *before* text
+    const userMessage = {
+      role: "user",
+      content: [
+        // Place the images first
+        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
         // Place the videos next
         ...(videos || []).map((dataUri) => ({ type: "video", value: dataUri })),
-        // --- END ADDED ---
-        // Place the text last
-        { type: "text", value: message },
-      ],
-    };
+        // Place the text last
+        { type: "text", value: message },
+      ],
+    };
     const assistantMessage = { role: "assistant", content: parsedContent };
 
     let newChatData = null;
