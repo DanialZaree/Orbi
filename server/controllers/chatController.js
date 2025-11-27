@@ -120,9 +120,15 @@ exports.sendMessage = async (req, res) => {
       role: "user",
       content: [
         // Place the images first
-        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
+        ...(images || []).map((dataUri) => {
+          const type = dataUri.startsWith("data:video/") ? "video" : "image";
+          return { type, value: dataUri };
+        }),
         // Place the videos next
-        ...(videos || []).map((dataUri) => ({ type: "video", value: dataUri })),
+        ...(videos || []).map((dataUri) => {
+          const type = dataUri.startsWith("data:image/") ? "image" : "video";
+          return { type, value: dataUri };
+        }),
         // Place the text last
         { type: "text", value: message },
       ],

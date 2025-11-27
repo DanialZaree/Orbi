@@ -136,6 +136,22 @@ export default function ChatBubble({ message, isLastMessage }) {
 
           // 2. Render Image Blocks
           if (block.type === "image") {
+            // Fallback: If the source is actually a video data URI, render as video
+            if (
+              typeof block.value === "string" &&
+              block.value.startsWith("data:video/")
+            ) {
+              return (
+                <video
+                  key={index}
+                  src={block.value}
+                  controls
+                  className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              );
+            }
             return (
               <img
                 key={index}
