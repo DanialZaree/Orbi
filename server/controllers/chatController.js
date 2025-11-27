@@ -116,16 +116,29 @@ exports.sendMessage = async (req, res) => {
     const parsedContent = parseGeminiResponse(responseText);
 
     // Save to DB with images and videos *before* text
+    const content = [
+      // Place the images first
+      ...(images || []).map((dataUri) => {
+        const type =
+          dataUri && dataUri.startsWith("data:video/") ? "video" : "image";
+        return { type, value: dataUri };
+      }),
+      // Place the videos next
+      ...(videos || []).map((dataUri) => {
+        const type =
+          dataUri && dataUri.startsWith("data:image/") ? "image" : "video";
+        return { type, value: dataUri };
+      }),
+    ];
+
+    // Only add text block if message is not empty
+    if (message && message.trim() !== "") {
+      content.push({ type: "text", value: message });
+    }
+
     const userMessage = {
       role: "user",
-      content: [
-        // Place the images first
-        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
-        // Place the videos next
-        ...(videos || []).map((dataUri) => ({ type: "video", value: dataUri })),
-        // Place the text last
-        { type: "text", value: message },
-      ],
+      content: content,
     };
     const assistantMessage = { role: "assistant", content: parsedContent };
 
