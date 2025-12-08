@@ -146,7 +146,7 @@ export default function ChatBubble({ message, isLastMessage }) {
                   key={index}
                   src={block.value}
                   controls
-                  className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
+                  className="max-h-[450px] w-full max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
                 >
                   Your browser does not support the video tag.
                 </video>
