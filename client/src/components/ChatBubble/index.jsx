@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { Bot, Copy, Check, Link as LinkIcon, ChevronDown } from "lucide-react";
+import { 
+  Bot, 
+  Copy, 
+  Check, 
+  Link as LinkIcon, 
+  ChevronDown, 
+  RotateCcw 
+} from "lucide-react";
 import orbi from "../../assets/orbi.webp";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -103,8 +110,29 @@ function ShikiCodeBlock({ code, lang }) {
   );
 }
 
-export default function ChatBubble({ message, isLastMessage }) {
+export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
   const isUser = message.role === "user";
+  const [isMessageCopied, setIsMessageCopied] = useState(false);
+
+  // Function to copy the entire message content
+  const handleCopyMessage = () => {
+    // Combine text from all blocks that contain text or code
+    const allText = message.content
+      ?.map((block) => {
+        if (block.type === "text" || block.type === "code") {
+          return block.value;
+        }
+        return ""; 
+      })
+      .join("\n");
+
+    if (allText) {
+      navigator.clipboard.writeText(allText).then(() => {
+        setIsMessageCopied(true);
+        setTimeout(() => setIsMessageCopied(false), 2000);
+      });
+    }
+  };
 
   return (
     <div
@@ -136,7 +164,6 @@ export default function ChatBubble({ message, isLastMessage }) {
 
           // 2. Render Image Blocks
           if (block.type === "image") {
-            // Fallback: If the source is actually a video data URI, render as video
             if (
               typeof block.value === "string" &&
               block.value.startsWith("data:video/")
@@ -155,7 +182,7 @@ export default function ChatBubble({ message, isLastMessage }) {
             return (
               <img
                 key={index}
-                src={block.value} // This will be the blob: or data: URL
+                src={block.value}
                 alt="User uploaded content"
                 className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
               />
@@ -165,7 +192,7 @@ export default function ChatBubble({ message, isLastMessage }) {
             return (
               <video
                 key={index}
-                src={block.value} // This will be the blob: or data: URL
+                src={block.value}
                 controls
                 className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
               >
@@ -173,7 +200,7 @@ export default function ChatBubble({ message, isLastMessage }) {
               </video>
             );
           }
-          // 3. Render Text Blocks (and skip empty text)
+          // 3. Render Text Blocks
           if (typeof block.value === "string" && block.value.trim() !== "") {
             const isRtlText = isRTL(block.value);
             return (
@@ -182,8 +209,7 @@ export default function ChatBubble({ message, isLastMessage }) {
                 className={`prose-sm prose prose-invert px-2 py-1`}
                 dir={isRtlText ? "rtl" : "ltr"}
               >
-                {/* We still apply the typing effect for the last AI message */}
-                {!isUser && isLastMessage ? (
+                {!isUser && isLastMessage && typeof TextType !== "undefined" ? (
                   <TextType
                     text={block.value}
                     typingSpeed={20}
@@ -246,6 +272,34 @@ export default function ChatBubble({ message, isLastMessage }) {
           }
           return null;
         })}
+
+        {/* --- Action Buttons (Copy & Regenerate) --- */}
+        {!isUser && (
+          <div className=" flex items-center justify-start gap-2 mt-2">
+            <button
+              onClick={handleCopyMessage}
+              className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
+              title="Copy response"
+            >
+              {isMessageCopied ? (
+                <Check size={16} className="text-gray-500" />
+              ) : (
+                <Copy size={16} />
+              )}
+            </button>
+            
+            {/* Logic change: Only show Regenerate if the prop is available */}
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
+                title="Regenerate response"
+              >
+                <RotateCcw size={16} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

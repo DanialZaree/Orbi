@@ -84,19 +84,87 @@ export default function App() {
     setChatNotFound(false);
   }, [setLocation]);
 
-  // --- THIS IS THE FIX: This function now splits images and text into separate messages ---
+  // --- REGENERATE FUNCTION ---
+const handleRegenerate = useCallback(async () => {
+  console.log("Regenerate clicked. Current messages:", messages.length);
+  
+  if (isLoading || messages.length === 0) return;
+
+  let newHistory = [...messages];
+  const lastMsg = newHistory[newHistory.length - 1];
+
+  // 1. Remove the last message if it is from the assistant (or not the user)
+  if (lastMsg.role !== "user") {
+    newHistory.pop();
+  }
+
+  // 2. Find the last user message
+  const lastUserMessage = newHistory[newHistory.length - 1];
+
+  // 3. specific check: make sure we actually found a user message
+  if (!lastUserMessage || lastUserMessage.role !== "user") {
+    console.warn("Could not find a user message to regenerate from.");
+    return;
+  }
+
+  // 4. Update UI immediately
+  setMessages(newHistory);
+  setIsLoading(true);
+
+  try {
+    // 5. Robustly extract text (Handles both String and Array formats)
+    let textContent = "";
+    
+    if (typeof lastUserMessage.content === "string") {
+      // Handle legacy messages (simple strings)
+      textContent = lastUserMessage.content;
+    } else if (Array.isArray(lastUserMessage.content)) {
+      // Handle new messages (blocks of text/image)
+      textContent = lastUserMessage.content
+        .filter((block) => block.type === "text")
+        .map((block) => block.value)
+        .join("\n");
+    }
+
+    console.log("Regenerating with prompt:", textContent);
+
+    // 6. Send to API
+    const response = await apiClient.post("/chat", {
+      message: textContent,
+      chatId: activeChatId,
+    });
+
+    // 7. Add response
+    const botMessage = {
+      role: "assistant",
+      content: response.data.response,
+    };
+
+    setMessages((prev) => [...prev, botMessage]);
+  } catch (error) {
+    console.error("Error regenerating message:", error);
+    const errorMessage = {
+      role: "assistant",
+      content: [
+        { type: "text", value: "Sorry, something went wrong. Please try again." },
+      ],
+    };
+    setMessages((prev) => [...prev, errorMessage]);
+  } finally {
+    setIsLoading(false);
+  }
+}, [messages, activeChatId, isLoading]);
+
+
   const handleSendMessage = useCallback(
     async ({ text, files }) => {
-      // 1. Create temporary "blob" URLs for the UI
       const filePreviews = files.map((file) => ({
         type: file.type.startsWith("video/") ? "video" : "image",
         value: URL.createObjectURL(file),
       }));
 
-      // 2. Create a list of new messages to add to the UI
       const newUIMessages = [];
 
-      // If there are images or videos, create a media-only message
       if (filePreviews.length > 0) {
         newUIMessages.push({
           role: "user",
@@ -104,7 +172,6 @@ export default function App() {
         });
       }
 
-      // If there is text, create a text-only message
       if (text.trim() !== "") {
         newUIMessages.push({
           role: "user",
@@ -112,15 +179,12 @@ export default function App() {
         });
       }
 
-      // 3. If there's nothing to send, do nothing.
       if (newUIMessages.length === 0) return;
 
-      // 4. Add all new user messages to the state at once
       setMessages((prevMessages) => [...prevMessages, ...newUIMessages]);
       setIsLoading(true);
 
       try {
-        // 5. Convert files to Base64 for the API
         const imageFiles = files.filter((file) =>
           file.type.startsWith("image/"),
         );
@@ -135,7 +199,6 @@ export default function App() {
           videoFiles.map((file) => fileToDataUri(file)),
         );
 
-        // 6. Send the API request (this logic is the same)
         const response = await apiClient.post("/chat", {
           message: text,
           chatId: activeChatId,
@@ -154,14 +217,15 @@ export default function App() {
           ]);
         }
 
-        // 7. Add the bot's response as a new message
         const botMessage = {
           role: "assistant",
           content: response.data.response,
         };
         setMessages((prevMessages) => [
           ...prevMessages,
-          ...newUIMessages,
+          ...newUIMessages, // Note: This might duplicate if you rely on strict state. 
+                            // Usually you filter out the optimistic ones or replace them.
+                            // But keeping your existing logic intact:
           botMessage,
         ]);
       } catch (error) {
@@ -175,7 +239,6 @@ export default function App() {
           role: "assistant",
           content: [{ type: "text", value: errorMessageText }],
         };
-        // 8. Add the error message as a new message
         setMessages((prevMessages) => [
           ...prevMessages,
           ...newUIMessages,
@@ -183,7 +246,6 @@ export default function App() {
         ]);
       } finally {
         setIsLoading(false);
-        // 9. Revoke the temporary blob URLs
         filePreviews.forEach((file) => URL.revokeObjectURL(file.value));
       }
     },
@@ -207,7 +269,11 @@ export default function App() {
                 {chatNotFound ? (
                   <NotFound />
                 ) : (
-                  <ChatWindow messages={messages} isLoading={isLoading} />
+                  <ChatWindow 
+                    messages={messages} 
+                    isLoading={isLoading} 
+                    onRegenerate={handleRegenerate} // <--- PASSED HERE
+                  />
                 )}
               </Route>
               <Route path="/">
