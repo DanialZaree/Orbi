@@ -7,20 +7,22 @@ const { apiLimiter } = require("../middleware/rateLimiter");
 // Apply rate limiter to all routes in this file
 router.use(apiLimiter);
 
-// --- THIS IS THE FIX: Add the route to get a single chat by its ID ---
-// It's important to place this route before the general '/' route.
+// Get specific chat
 router.get("/:id", authMiddleware, chatController.getChatById);
 
-// This route handles fetching the user's chat list
+// Get chat history list
 router.get("/", authMiddleware, chatController.getChatHistory);
 
-// This route handles sending a new message
+// Send new message
 router.post("/", authMiddleware, chatController.sendMessage);
 
-// --- THIS IS THE NEW ROUTE ---
-// When a DELETE request is made to /api/chat/:id, it will run the deleteChatById function
+// This deletes ONLY the last message (for regeneration)
+router.delete("/:id/last", authMiddleware, chatController.deleteLastMessage);
+
+// Delete entire chat
 router.delete("/:id", authMiddleware, chatController.deleteChatById);
 
+// Rename chat
 router.patch("/:id/rename", authMiddleware, chatController.renameChatById);
 
 module.exports = router;

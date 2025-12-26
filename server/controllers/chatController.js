@@ -264,3 +264,42 @@ exports.deleteChatById = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
+exports.deleteLastMessage = async (req, res) => {
+  try {
+    const { id: chatId } = req.params;
+    const userId = req.user._id.toString();
+
+    // 1. Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid chat ID format." });
+    }
+
+    // 2. Find the chat
+    const chat = await Chat.findOne({ _id: chatId, userId: userId });
+
+    if (!chat) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Chat not found or access denied." });
+    }
+
+    // 3. Remove the last message
+    if (chat.messages && chat.messages.length > 0) {
+      chat.messages.pop(); // Remove the last item from the array
+      await chat.save();   // Save the update to MongoDB
+      
+      return res
+        .status(200)
+        .json({ success: true, message: "Last message deleted successfully." });
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "No messages to delete." });
+    }
+  } catch (error) {
+    console.error("Error deleting last message:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};

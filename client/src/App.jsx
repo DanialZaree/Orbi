@@ -84,77 +84,82 @@ export default function App() {
     setChatNotFound(false);
   }, [setLocation]);
 
-  // --- REGENERATE FUNCTION ---
-const handleRegenerate = useCallback(async () => {
-  console.log("Regenerate clicked. Current messages:", messages.length);
-  
-  if (isLoading || messages.length === 0) return;
+  // --- UPDATED REGENERATE FUNCTION ---
+  // This version deletes the bad response from the DB so it doesn't return on refresh.
+  const handleRegenerate = useCallback(async () => {
+    if (isLoading || messages.length === 0) return;
 
-  let newHistory = [...messages];
-  const lastMsg = newHistory[newHistory.length - 1];
+    // 1. Get the last message to ensure it's from the AI
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role === "user") return;
 
-  // 1. Remove the last message if it is from the assistant (or not the user)
-  if (lastMsg.role !== "user") {
-    newHistory.pop();
-  }
+    console.log("Regenerating... Removing old message from DB and UI.");
 
-  // 2. Find the last user message
-  const lastUserMessage = newHistory[newHistory.length - 1];
-
-  // 3. specific check: make sure we actually found a user message
-  if (!lastUserMessage || lastUserMessage.role !== "user") {
-    console.warn("Could not find a user message to regenerate from.");
-    return;
-  }
-
-  // 4. Update UI immediately
-  setMessages(newHistory);
-  setIsLoading(true);
-
-  try {
-    // 5. Robustly extract text (Handles both String and Array formats)
-    let textContent = "";
-    
-    if (typeof lastUserMessage.content === "string") {
-      // Handle legacy messages (simple strings)
-      textContent = lastUserMessage.content;
-    } else if (Array.isArray(lastUserMessage.content)) {
-      // Handle new messages (blocks of text/image)
-      textContent = lastUserMessage.content
-        .filter((block) => block.type === "text")
-        .map((block) => block.value)
-        .join("\n");
-    }
-
-    console.log("Regenerating with prompt:", textContent);
-
-    // 6. Send to API
-    const response = await apiClient.post("/chat", {
-      message: textContent,
-      chatId: activeChatId,
+    // 2. Optimistic UI Update: Remove it from the screen immediately
+    setMessages((prev) => {
+      const newHistory = [...prev];
+      newHistory.pop();
+      return newHistory;
     });
+    setIsLoading(true);
 
-    // 7. Add response
-    const botMessage = {
-      role: "assistant",
-      content: response.data.response,
-    };
+    try {
+      // 3. IMPORTANT: Tell server to delete the last message from the DB
+      if (activeChatId) {
+        await apiClient.delete(`/chat/${activeChatId}/last`);
+      }
 
-    setMessages((prev) => [...prev, botMessage]);
-  } catch (error) {
-    console.error("Error regenerating message:", error);
-    const errorMessage = {
-      role: "assistant",
-      content: [
-        { type: "text", value: "Sorry, something went wrong. Please try again." },
-      ],
-    };
-    setMessages((prev) => [...prev, errorMessage]);
-  } finally {
-    setIsLoading(false);
-  }
-}, [messages, activeChatId, isLoading]);
+      // 4. Find the user prompt to re-send (it's now the last one in the theoretical history)
+      // Note: We use messages[messages.length - 2] because 'messages' variable 
+      // still holds the old state in this render cycle until the next render.
+      const promptMsg = messages[messages.length - 2];
 
+      if (!promptMsg || promptMsg.role !== "user") {
+        console.warn("Could not find user prompt to regenerate.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 5. Extract text content
+      let textContent = "";
+      if (typeof promptMsg.content === "string") {
+        textContent = promptMsg.content;
+      } else if (Array.isArray(promptMsg.content)) {
+        textContent = promptMsg.content
+          .filter((block) => block.type === "text")
+          .map((block) => block.value)
+          .join("\n");
+      }
+
+      // 6. Generate new response
+      const response = await apiClient.post("/chat", {
+        message: textContent,
+        chatId: activeChatId,
+      });
+
+      // 7. Add the new bot response
+      const botMessage = {
+        role: "assistant",
+        content: response.data.response,
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error regenerating message:", error);
+      const errorMessage = {
+        role: "assistant",
+        content: [
+          {
+            type: "text",
+            value: "Sorry, something went wrong. Please try again.",
+          },
+        ],
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [messages, activeChatId, isLoading]);
 
   const handleSendMessage = useCallback(
     async ({ text, files }) => {
@@ -223,9 +228,7 @@ const handleRegenerate = useCallback(async () => {
         };
         setMessages((prevMessages) => [
           ...prevMessages,
-          ...newUIMessages, // Note: This might duplicate if you rely on strict state. 
-                            // Usually you filter out the optimistic ones or replace them.
-                            // But keeping your existing logic intact:
+          ...newUIMessages,
           botMessage,
         ]);
       } catch (error) {
@@ -269,9 +272,9 @@ const handleRegenerate = useCallback(async () => {
                 {chatNotFound ? (
                   <NotFound />
                 ) : (
-                  <ChatWindow 
-                    messages={messages} 
-                    isLoading={isLoading} 
+                  <ChatWindow
+                    messages={messages}
+                    isLoading={isLoading}
                     onRegenerate={handleRegenerate} // <--- PASSED HERE
                   />
                 )}

@@ -273,7 +273,6 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
           return null;
         })}
 
-        {/* --- Action Buttons (Copy & Regenerate) --- */}
         {!isUser && (
           <div className=" flex items-center justify-start gap-2 mt-2">
             <button
@@ -288,7 +287,6 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
               )}
             </button>
             
-            {/* Logic change: Only show Regenerate if the prop is available */}
             {onRegenerate && (
               <button
                 onClick={onRegenerate}
