@@ -86,16 +86,15 @@ export default function App() {
 
   // --- UPDATED REGENERATE FUNCTION ---
   // This version deletes the bad response from the DB so it doesn't return on refresh.
-  const handleRegenerate = useCallback(async () => {
+const handleRegenerate = useCallback(async () => {
     if (isLoading || messages.length === 0) return;
 
-    // 1. Get the last message to ensure it's from the AI
     const lastMsg = messages[messages.length - 1];
     if (lastMsg.role === "user") return;
 
-    console.log("Regenerating... Removing old message from DB and UI.");
+    console.log("Regenerating... Deleting old AI message.");
 
-    // 2. Optimistic UI Update: Remove it from the screen immediately
+    // 1. Remove Old AI Message from UI
     setMessages((prev) => {
       const newHistory = [...prev];
       newHistory.pop();
@@ -104,23 +103,14 @@ export default function App() {
     setIsLoading(true);
 
     try {
-      // 3. IMPORTANT: Tell server to delete the last message from the DB
+      // 2. Delete Old AI Message from DB
       if (activeChatId) {
         await apiClient.delete(`/chat/${activeChatId}/last`);
       }
 
-      // 4. Find the user prompt to re-send (it's now the last one in the theoretical history)
-      // Note: We use messages[messages.length - 2] because 'messages' variable 
-      // still holds the old state in this render cycle until the next render.
+      // 3. Get the original User Prompt
       const promptMsg = messages[messages.length - 2];
-
-      if (!promptMsg || promptMsg.role !== "user") {
-        console.warn("Could not find user prompt to regenerate.");
-        setIsLoading(false);
-        return;
-      }
-
-      // 5. Extract text content
+      
       let textContent = "";
       if (typeof promptMsg.content === "string") {
         textContent = promptMsg.content;
@@ -131,13 +121,14 @@ export default function App() {
           .join("\n");
       }
 
-      // 6. Generate new response
+      // 4. Send Request with 'skipUserSave: true'
+      // This prevents the "Duplicate User Text" issue
       const response = await apiClient.post("/chat", {
         message: textContent,
         chatId: activeChatId,
+        skipUserSave: true, // <--- ADD THIS LINE
       });
 
-      // 7. Add the new bot response
       const botMessage = {
         role: "assistant",
         content: response.data.response,
@@ -145,17 +136,8 @@ export default function App() {
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error("Error regenerating message:", error);
-      const errorMessage = {
-        role: "assistant",
-        content: [
-          {
-            type: "text",
-            value: "Sorry, something went wrong. Please try again.",
-          },
-        ],
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error("Regeneration Error:", error);
+      // ... error handling
     } finally {
       setIsLoading(false);
     }

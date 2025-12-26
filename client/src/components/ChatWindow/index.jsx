@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import ChatBubble from "../ChatBubble";
 import { SpinnerCustom } from "../ui/spinner";
+import homeVideo from "../../assets/green.webm";
 
 // 1. Added onRegenerate to the props
 export default function ChatWindow({ messages, isLoading, onRegenerate }) {
@@ -33,7 +34,7 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
       ref={chatContainerRef}
       className="w-full flex-1 overflow-y-auto p-6 pt-12"
     >
-      <div className="mx-auto md:max-w-2xl w-full space-y-6 ">
+      <div className="mx-auto w-full space-y-6 md:max-w-2xl">
         {messages &&
           messages.map((msg, index) => (
             <ChatBubble
@@ -49,6 +50,14 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
           ))}
         {isLoading && messages && messages.length > 0 && (
           <div className="text-secondary-text animate-pulse text-left">
+            <video
+              src={homeVideo}
+              width="32"
+              autoPlay
+              loop
+              muted
+              playsInline
+            ></video>
             ORBI is typing...
           </div>
         )}

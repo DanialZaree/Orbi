@@ -50,25 +50,26 @@ function parseGeminiResponse(responseText) {
 
 exports.sendMessage = async (req, res) => {
   try {
-    const { message, chatId, images, videos } = req.body;
+    // 1. Destructure skipUserSave from the request
+    const { message, chatId, images, videos, skipUserSave } = req.body;
     const userId = req.user._id.toString();
 
     let formattedHistory = [];
-    let currentChat;
+    let currentChat;
 
-    if (chatId) {
-      if (!mongoose.Types.ObjectId.isValid(chatId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid chat ID format." });
-      }
-      currentChat = await Chat.findOne({ _id: chatId, userId: userId });
-      if (!currentChat) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Chat not found." });
-      }
-      // Re-format database history for Gemini, including any past images/videos
+    if (chatId) {
+      if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid chat ID format." });
+      }
+      currentChat = await Chat.findOne({ _id: chatId, userId: userId });
+      if (!currentChat) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Chat not found." });
+      }
+      // Re-format database history for Gemini
       formattedHistory = currentChat.messages.map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: msg.content
@@ -78,13 +79,13 @@ exports.sendMessage = async (req, res) => {
             }
             return { text: block.value };
           })
-          .filter((part) => part), // Filter out any null/invalid parts
+          .filter((part) => part),
       }));
-    }
+    }
 
-    const systemInstruction = {
-    // ... (your system instruction remains the same) ...
-    };
+    const systemInstruction = {
+      // ... (your system instruction remains the same) ...
+    };
 
     const newImageParts = (images || [])
       .map(dataUriToGenerativePart)
@@ -115,46 +116,65 @@ exports.sendMessage = async (req, res) => {
     const responseText = response.text();
     const parsedContent = parseGeminiResponse(responseText);
 
-    // Save to DB with images and videos *before* text
+    // Prepare the User Message object
     const userMessage = {
       role: "user",
       content: [
-        // Place the images first
         ...(images || []).map((dataUri) => {
           const type = dataUri.startsWith("data:video/") ? "video" : "image";
           return { type, value: dataUri };
         }),
-        // Place the videos next
         ...(videos || []).map((dataUri) => {
           const type = dataUri.startsWith("data:image/") ? "image" : "video";
           return { type, value: dataUri };
         }),
-        // Place the text last
         { type: "text", value: message },
       ],
     };
-    const assistantMessage = { role: "assistant", content: parsedContent };
 
-    let newChatData = null;
-    if (!currentChat) {
-    // ... (title generation logic remains the same) ...
-    }
+    // Prepare the Assistant Message object
+    const assistantMessage = { role: "assistant", content: parsedContent };
 
-    currentChat.messages.push(userMessage, assistantMessage);
-    await currentChat.save();
+    let newChatData = null;
 
-    res.json({
-      success: true,
-      response: parsedContent,
-      chatId: currentChat._id,
-      newChat: newChatData,
-    });
-  } catch (error) {
-    console.error("Error with Gemini API or DB:", error.message);
-    res
-      .status(500)
-      .json({ success: false, message: "Error communicating with the AI." });
-  }
+    // Handle New Chat Creation
+    if (!currentChat) {
+      // If it's a new chat, we MUST save the user message, so we ignore skipUserSave here
+      // ... (Include your title generation logic here as before) ...
+      
+      // Example placeholder for creating the chat instance if it doesn't exist:
+      /* currentChat = new Chat({
+        userId: userId,
+        title: generatedTitle || "New Chat", // Use your logic
+        messages: [] 
+      });
+      newChatData = { _id: currentChat._id, title: currentChat.title };
+      */
+    }
+
+    // --- SAVE LOGIC FIX ---
+    // If skipUserSave is true, we ONLY push the assistant message.
+    // This prevents the user prompt from appearing twice in the DB during regeneration.
+    if (skipUserSave && currentChat) {
+      currentChat.messages.push(assistantMessage);
+    } else {
+      currentChat.messages.push(userMessage, assistantMessage);
+    }
+
+    await currentChat.save();
+
+    res.json({
+      success: true,
+      response: parsedContent,
+      chatId: currentChat._id,
+      newChat: newChatData,
+    });
+  } catch (error) {
+    console.error("Error with Gemini API or DB:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Error communicating with the AI." });
+  }
 };
 
 exports.getChatHistory = async (req, res) => {
