@@ -49,16 +49,16 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
             />
           ))}
         {isLoading && messages && messages.length > 0 && (
-          <div className="text-secondary-text animate-pulse text-left">
+          <div className="text-secondary-text flex items-center text-left">
             <video
               src={homeVideo}
-              width="32"
+              width="85"
               autoPlay
               loop
               muted
               playsInline
             ></video>
-            ORBI is typing...
+            <span className="animate-pulse"> ORBI is typing...</span>
           </div>
         )}
         <div ref={messagesEndRef} />
