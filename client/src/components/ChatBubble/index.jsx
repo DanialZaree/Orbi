@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { 
-  Bot, 
-  Copy, 
-  Check, 
-  Link as LinkIcon, 
-  ChevronDown, 
-  RotateCcw 
+import { useState, useEffect, useMemo } from "react";
+import {
+  Bot,
+  Copy,
+  Check,
+  Link as LinkIcon,
+  ChevronDown,
+  RotateCcw,
 } from "lucide-react";
 import orbi from "../../assets/orbi.webp";
 import ReactMarkdown from "react-markdown";
@@ -16,13 +16,37 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-// This function checks if the text contains characters from the Arabic script Unicode range.
+// --- Helper: RTL Detection ---
 function isRTL(text) {
   const rtlRegex = /[\u0600-\u06FF]/;
   return rtlRegex.test(text);
 }
 
-// --- Shiki Highlighter ---
+// --- Helper: Shared Markdown Components ---
+// We define this here so both the Typewriter and the static view use the EXACT same styling.
+const MARKDOWN_COMPONENTS = {
+  p: ({ node, children }) => {
+    if (
+      node.children[0]?.type === "element" &&
+      node.children[0]?.properties?.className?.includes("math-display")
+    ) {
+      return <div className="my-4 flex justify-center">{children}</div>;
+    }
+    return <p className="my-3 first:mt-0 last:mb-0">{children}</p>;
+  },
+  a: ({ node, ...props }) => (
+    <a
+      {...props}
+      className="inline-flex items-center gap-1 text-blue-400 hover:underline"
+    >
+      {props.children} <LinkIcon size={12} />
+    </a>
+  ),
+  ul: ({ node, ...props }) => <ul {...props} className="my-3 list-none pl-0" />,
+  ol: ({ node, ...props }) => <ol {...props} className="my-3 list-none pl-0" />,
+};
+
+// --- Helper: Shiki Highlighter ---
 const highlighterPromise = createHighlighter({
   themes: ["tokyo-night"],
   langs: [
@@ -39,7 +63,7 @@ const highlighterPromise = createHighlighter({
   ],
 });
 
-// --- ShikiCodeBlock Component ---
+// --- Component: Code Block ---
 function ShikiCodeBlock({ code, lang }) {
   const [htmlBlock, setHtmlBlock] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -58,7 +82,7 @@ function ShikiCodeBlock({ code, lang }) {
         if (isMounted) setHtmlBlock(html);
       } catch (error) {
         console.warn(
-          `Shiki language "${lang}" not found. Falling back to plaintext.`,
+          `Shiki language "${lang}" not found. Falling back to plaintext.`
         );
         if (isMounted) {
           const fallbackHtml = highlighter.codeToHtml(code, {
@@ -110,19 +134,56 @@ function ShikiCodeBlock({ code, lang }) {
   );
 }
 
+// --- Component: Typewriter ---
+// This handles the typing animation for text blocks
+function Typewriter({ text, speed = 10 }) {
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    let i = 0;
+    setDisplayedText(""); // Reset when text prop changes
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        setDisplayedText((prev) => prev + text.charAt(i));
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[
+        [
+          rehypeExternalLinks,
+          { target: "_blank", rel: ["noopener", "noreferrer"] },
+        ],
+        rehypeKatex,
+      ]}
+      components={MARKDOWN_COMPONENTS}
+    >
+      {displayedText}
+    </ReactMarkdown>
+  );
+}
+
+// --- Main Component: ChatBubble ---
 export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
   const isUser = message.role === "user";
   const [isMessageCopied, setIsMessageCopied] = useState(false);
 
   // Function to copy the entire message content
   const handleCopyMessage = () => {
-    // Combine text from all blocks that contain text or code
     const allText = message.content
       ?.map((block) => {
         if (block.type === "text" || block.type === "code") {
           return block.value;
         }
-        return ""; 
+        return "";
       })
       .join("\n");
 
@@ -188,6 +249,8 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
               />
             );
           }
+
+          // 3. Render Video Blocks
           if (block.type === "video") {
             return (
               <video
@@ -200,7 +263,8 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
               </video>
             );
           }
-          // 3. Render Text Blocks
+
+          // 4. Render Text Blocks (With Typing Effect)
           if (typeof block.value === "string" && block.value.trim() !== "") {
             const isRtlText = isRTL(block.value);
             return (
@@ -209,16 +273,11 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
                 className={`prose-sm prose prose-invert px-2 py-1`}
                 dir={isRtlText ? "rtl" : "ltr"}
               >
-                {!isUser && isLastMessage && typeof TextType !== "undefined" ? (
-                  <TextType
-                    text={block.value}
-                    typingSpeed={20}
-                    loop={false}
-                    showCursor={true}
-                    cursorCharacter="█"
-                    className="prose prose-invert prose-sm"
-                  />
+                {!isUser && isLastMessage ? (
+                  // If it's the AI's last message, use the Typewriter effect
+                  <Typewriter text={block.value} speed={10} />
                 ) : (
+                  // Otherwise, render static Markdown
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[
@@ -228,41 +287,7 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
                       ],
                       rehypeKatex,
                     ]}
-                    components={{
-                      p: ({ node, children }) => {
-                        if (
-                          node.children[0]?.type === "element" &&
-                          node.children[0]?.properties?.className?.includes(
-                            "math-display",
-                          )
-                        ) {
-                          return (
-                            <div className="my-4 flex justify-center">
-                              {children}
-                            </div>
-                          );
-                        }
-                        return (
-                          <p className="my-3 first:mt-0 last:mb-0">
-                            {children}
-                          </p>
-                        );
-                      },
-                      a: ({ node, ...props }) => (
-                        <a
-                          {...props}
-                          className="inline-flex items-center gap-1 text-blue-400 hover:underline"
-                        >
-                          {props.children} <LinkIcon size={12} />
-                        </a>
-                      ),
-                      ul: ({ node, ...props }) => (
-                        <ul {...props} className="my-3 list-none pl-0" />
-                      ),
-                      ol: ({ node, ...props }) => (
-                        <ol {...props} className="my-3 list-none pl-0" />
-                      ),
-                    }}
+                    components={MARKDOWN_COMPONENTS}
                   >
                     {block.value}
                   </ReactMarkdown>
@@ -274,7 +299,7 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
         })}
 
         {!isUser && (
-          <div className=" flex items-center justify-start gap-2 mt-2">
+          <div className="flex items-center justify-start gap-2 mt-2">
             <button
               onClick={handleCopyMessage}
               className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
@@ -286,7 +311,7 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
                 <Copy size={16} />
               )}
             </button>
-            
+
             {onRegenerate && (
               <button
                 onClick={onRegenerate}

@@ -52,7 +52,7 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
           <div className="text-secondary-text flex items-center text-left">
             <video
               src={homeVideo}
-              width="85"
+              width="65"
               autoPlay
               loop
               muted

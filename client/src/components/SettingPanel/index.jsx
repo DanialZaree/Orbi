@@ -88,7 +88,7 @@ export default function SettingsPanel({ user, logout, onClose }) {
             <div className="flex flex-col items-center gap-4 text-center">
               {user.picture && (
                 <img
-                  src={user.picture}
+                  src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
                   alt="User Profile"
                   className="h-24 w-24 rounded-full border-2 border-blue-500 object-cover"
                 />
