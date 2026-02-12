@@ -46,7 +46,7 @@ exports.googleLogin = async (req, res) => {
     );
 
     const appToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "15d",
     });
 
     res.status(200).json({
@@ -125,14 +125,69 @@ exports.requestEmailOTP = async (req, res) => {
       { upsert: true, setDefaultsOnInsert: true },
     );
 
-    // --- REPLACED TRANSPORTER WITH RESEND ---
-    await resend.emails.send({
-      from: '"Orbi" <onboarding@resend.dev>',
-      to: email,
-      subject: "Your Orbi Verification Code",
-      text: `Your verification code is: ${otp}`,
-      html: `<b>Your verification code is: ${otp}</b><p>This code will expire in 10 minutes.</p>`,
-    });
+await resend.emails.send({
+  from: '"Orbi" <support@orbiai.ir>',
+  to: email,
+  subject: "Your Orbi Verification Code",
+  text: `Your Orbi verification code is ${otp}. This code will expire in 10 minutes.`,
+  html: `
+<!DOCTYPE html>
+<html>
+  <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:420px;background:#ffffff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);padding:32px;">
+            
+            <tr>
+              <td align="center" style="padding-bottom:16px;">
+                <h1 style="margin:0;font-size:22px;color:#111827;">
+                  Verify your email
+                </h1>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding-bottom:24px;">
+                <p style="margin:0;font-size:15px;color:#6b7280;">
+                  Use the verification code below to sign in to <strong>Orbi</strong>.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding-bottom:24px;">
+                <div style="font-size:32px;letter-spacing:6px;font-weight:700;color:#111827;background:#f9fafb;padding:16px 24px;border-radius:10px;display:inline-block;">
+                  ${otp}
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding-bottom:24px;">
+                <p style="margin:0;font-size:14px;color:#6b7280;">
+                  This code will expire in <strong>10 minutes</strong>.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="border-top:1px solid #e5e7eb;padding-top:16px;">
+                <p style="margin:0;font-size:12px;color:#9ca3af;">
+                  If you didn’t request this, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+  `,
+});
+
 
     res
       .status(200)
@@ -194,7 +249,7 @@ exports.verifyEmailAndRegister = async (req, res) => {
     );
 
     const appToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "15d",
     });
 
     res.status(201).json({
@@ -219,8 +274,7 @@ exports.verifyEmailAndRegister = async (req, res) => {
 exports.loginWithEmail = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (
-      !email ||
+    if (!email ||
       typeof email !== "string" ||
       !password ||
       typeof password !== "string"
@@ -250,7 +304,7 @@ exports.loginWithEmail = async (req, res) => {
         .json({ success: false, message: "Invalid credentials." });
     }
     const appToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "15d",
     });
 
     res.status(200).json({
@@ -268,6 +322,6 @@ exports.loginWithEmail = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Server error during login." });
-    D;
+    ;
   }
 };
