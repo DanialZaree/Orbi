@@ -86,7 +86,7 @@ export default function App() {
 
   // --- UPDATED REGENERATE FUNCTION ---
   // This version deletes the bad response from the DB so it doesn't return on refresh.
-const handleRegenerate = useCallback(async () => {
+  const handleRegenerate = useCallback(async () => {
     if (isLoading || messages.length === 0) return;
 
     const lastMsg = messages[messages.length - 1];
@@ -110,7 +110,7 @@ const handleRegenerate = useCallback(async () => {
 
       // 3. Get the original User Prompt
       const promptMsg = messages[messages.length - 2];
-      
+
       let textContent = "";
       if (typeof promptMsg.content === "string") {
         textContent = promptMsg.content;
@@ -208,11 +208,7 @@ const handleRegenerate = useCallback(async () => {
           role: "assistant",
           content: response.data.response,
         };
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          ...newUIMessages,
-          botMessage,
-        ]);
+        setMessages((prevMessages) => [...prevMessages, botMessage]);
       } catch (error) {
         console.error("Error sending message:", error);
         let errorMessageText =
@@ -224,11 +220,7 @@ const handleRegenerate = useCallback(async () => {
           role: "assistant",
           content: [{ type: "text", value: errorMessageText }],
         };
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          ...newUIMessages,
-          errorMessage,
-        ]);
+        setMessages((prevMessages) => [...prevMessages, errorMessage]);
       } finally {
         setIsLoading(false);
         filePreviews.forEach((file) => URL.revokeObjectURL(file.value));
@@ -247,8 +239,8 @@ const handleRegenerate = useCallback(async () => {
         onNewChat={handleNewChat}
       />
       <main className="relative flex h-full w-full flex-1 flex-col font-sans">
-        <div className="mx-auto flex w-full  flex-1 flex-col items-center overflow-hidden">
-          <div className="chatwindow w-full  flex-1 overflow-y-auto py-4">
+        <div className="mx-auto flex w-full flex-1 flex-col items-center overflow-hidden">
+          <div className="chatwindow w-full flex-1 overflow-y-auto py-4">
             <Switch>
               <Route path="/:chatId">
                 {chatNotFound ? (

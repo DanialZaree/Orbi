@@ -9,7 +9,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 function dataUriToGenerativePart(dataUri) {
   try {
     const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/,
+      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/
     );
     if (!match) {
       throw new Error("Invalid data URI format");
@@ -139,22 +139,19 @@ exports.sendMessage = async (req, res) => {
 
     // Handle New Chat Creation
     if (!currentChat) {
-      // If it's a new chat, we MUST save the user message, so we ignore skipUserSave here
-      // ... (Include your title generation logic here as before) ...
-      
-      // Example placeholder for creating the chat instance if it doesn't exist:
-      /* currentChat = new Chat({
+
+      const firstText = (message || "").trim();
+      let generatedTitle = firstText ? firstText.slice(0, 50) : "New Chat";
+      if (firstText.length > 50) generatedTitle += "...";
+
+      currentChat = new Chat({
         userId: userId,
-        title: generatedTitle || "New Chat", // Use your logic
-        messages: [] 
+        title: generatedTitle,
+        messages: [],
       });
       newChatData = { _id: currentChat._id, title: currentChat.title };
-      */
     }
 
-    // --- SAVE LOGIC FIX ---
-    // If skipUserSave is true, we ONLY push the assistant message.
-    // This prevents the user prompt from appearing twice in the DB during regeneration.
     if (skipUserSave && currentChat) {
       currentChat.messages.push(assistantMessage);
     } else {
@@ -232,23 +229,19 @@ exports.renameChatById = async (req, res) => {
     const updatedChat = await Chat.findOneAndUpdate(
       { _id: chatId, userId: userId },
       { $set: { title: newTitle } },
-      { new: true },
+      { new: true }
     );
     if (!updatedChat) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Chat not found or permission denied.",
-        });
-    }
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Chat renamed successfully.",
-        chat: updatedChat,
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found or permission denied.",
       });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Chat renamed successfully.",
+      chat: updatedChat,
+    });
   } catch (error) {
     console.error("Error renaming chat:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
@@ -269,12 +262,10 @@ exports.deleteChatById = async (req, res) => {
       userId: userId,
     });
     if (!result) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Chat not found or you do not have permission to delete it.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found or you do not have permission to delete it.",
+      });
     }
     res
       .status(200)
@@ -308,8 +299,8 @@ exports.deleteLastMessage = async (req, res) => {
     // 3. Remove the last message
     if (chat.messages && chat.messages.length > 0) {
       chat.messages.pop(); // Remove the last item from the array
-      await chat.save();   // Save the update to MongoDB
-      
+      await chat.save(); // Save the update to MongoDB
+
       return res
         .status(200)
         .json({ success: true, message: "Last message deleted successfully." });
