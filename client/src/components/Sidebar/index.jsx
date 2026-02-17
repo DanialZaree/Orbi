@@ -137,7 +137,7 @@ export default function Sidebar({
           </span>
           <button
             onClick={openHandle}
-            className="border-border-color max-md:visible hidden text-secondary-text hover:bg-dark-third-bg m-4 ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
+            className="border-border-color block md:hidden text-secondary-text hover:bg-dark-third-bg m-4 ml-auto cursor-pointer rounded-lg border p-2 transition-colors hover:text-white"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft
