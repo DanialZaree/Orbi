@@ -135,7 +135,7 @@ function ShikiCodeBlock({ code, lang }) {
 }
 
 // --- Component: Typewriter ---
-// This handles the typing animation for text blocks
+// Fix applied: Changed state update logic from concatenation to slice
 function Typewriter({ text, speed = 10 }) {
   const [displayedText, setDisplayedText] = useState("");
 
@@ -144,7 +144,9 @@ function Typewriter({ text, speed = 10 }) {
     setDisplayedText(""); // Reset when text prop changes
     const timer = setInterval(() => {
       if (i < text.length) {
-        setDisplayedText((prev) => prev + text.charAt(i));
+        // FIX: Use slice instead of prev + charAt(i). 
+        // This prevents state batching glitches that skip characters.
+        setDisplayedText(text.slice(0, i + 1));
         i++;
       } else {
         clearInterval(timer);
