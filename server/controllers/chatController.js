@@ -9,7 +9,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 function dataUriToGenerativePart(dataUri) {
   try {
     const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/
+      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
     );
     if (!match) {
       throw new Error("Invalid data URI format");
@@ -19,6 +19,22 @@ function dataUriToGenerativePart(dataUri) {
     console.error("Failed to parse data URI:", error.message);
     return null; // Return null to be filtered out
   }
+}
+
+// Helper: Check if the file is text-based (code, json, txt, etc.)
+function isTextFile(mimeType) {
+  return (
+    mimeType.startsWith("text/") ||
+    mimeType === "application/json" ||
+    mimeType === "application/javascript" ||
+    mimeType === "application/x-javascript" ||
+    mimeType === "application/xml"
+  );
+}
+
+// Helper: Decode Base64 to UTF-8 String
+function decodeBase64(base64Str) {
+  return Buffer.from(base64Str, "base64").toString("utf-8");
 }
 
 // Helper to parse the AI's text response
@@ -75,12 +91,25 @@ exports.sendMessage = async (req, res) => {
         role: msg.role === "assistant" ? "model" : "user",
         parts: msg.content
           .map((block) => {
-            if (
-              block.type === "image" ||
-              block.type === "video" ||
-              block.type === "file"
-            ) {
+            if (block.type === "image" || block.type === "video") {
               return dataUriToGenerativePart(block.value);
+            }
+            if (block.type === "file") {
+              const match = block.value.match(
+                /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
+              );
+              if (match) {
+                const mimeType = match[1];
+                const base64Data = match[2];
+                if (isTextFile(mimeType)) {
+                  const content = decodeBase64(base64Data);
+                  const fileName = block.fileName || "Attached File";
+                  return {
+                    text: `\n\n--- File: ${fileName} ---\n\`\`\`\n${content}\n\`\`\`\n`,
+                  };
+                }
+                return { inlineData: { data: base64Data, mimeType: mimeType } };
+              }
             }
             return { text: block.value };
           })
@@ -100,16 +129,38 @@ exports.sendMessage = async (req, res) => {
       .map(dataUriToGenerativePart)
       .filter((part) => part);
 
-    const newDocumentParts = (documents || [])
-      .map((doc) => dataUriToGenerativePart(doc.value))
-      .filter((part) => part);
+    const newDocumentParts = [];
+    let appendedTextContent = "";
+
+    (documents || []).forEach((doc) => {
+      const match = doc.value.match(
+        /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
+      );
+      if (match) {
+        const mimeType = match[1];
+        const base64Data = match[2];
+
+        if (isTextFile(mimeType)) {
+          // If it's a text/code file, append its content to the prompt
+          const fileContent = decodeBase64(base64Data);
+          appendedTextContent += `\n\n--- File: ${doc.name} ---\n\`\`\`\n${fileContent}\n\`\`\`\n`;
+        } else {
+          // Otherwise, treat as a binary document (e.g. PDF)
+          newDocumentParts.push({
+            inlineData: { data: base64Data, mimeType: mimeType },
+          });
+        }
+      }
+    });
+
+    const finalMessage = message + appendedTextContent;
 
     // Place image, video, and document parts *before* the text part for the API call
     const userMessageParts = [
       ...newImageParts,
       ...newVideoParts,
       ...newDocumentParts,
-      { text: message },
+      { text: finalMessage },
     ];
 
     const contents = [
