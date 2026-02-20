@@ -6,13 +6,17 @@ const contentBlockSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["text", "code", "image"],
+      enum: ["text", "code", "image", "video", "file"],
     },
     value: {
       type: String,
       required: true,
     },
     language: {
+      type: String,
+      required: false,
+    },
+    fileName: {
       type: String,
       required: false,
     },

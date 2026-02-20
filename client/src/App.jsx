@@ -145,15 +145,17 @@ export default function App() {
 
   const handleSendMessage = useCallback(
     async ({ text, files }) => {
-      const validFiles = files.filter(
-        (file) =>
-          file.type.startsWith("image/") || file.type.startsWith("video/"),
-      );
+      const filePreviews = files.map((file) => {
+        let type = "file";
+        if (file.type.startsWith("image/")) type = "image";
+        if (file.type.startsWith("video/")) type = "video";
 
-      const filePreviews = validFiles.map((file) => ({
-        type: file.type.startsWith("video/") ? "video" : "image",
-        value: URL.createObjectURL(file),
-      }));
+        return {
+          type,
+          value: URL.createObjectURL(file),
+          fileName: file.name,
+        };
+      });
 
       const newUIMessages = [];
 
@@ -183,6 +185,10 @@ export default function App() {
         const videoFiles = files.filter((file) =>
           file.type.startsWith("video/"),
         );
+        const docFiles = files.filter(
+          (file) =>
+            !file.type.startsWith("image/") && !file.type.startsWith("video/"),
+        );
 
         const imageDataUris = await Promise.all(
           imageFiles.map((file) => fileToDataUri(file)),
@@ -190,12 +196,19 @@ export default function App() {
         const videoDataUris = await Promise.all(
           videoFiles.map((file) => fileToDataUri(file)),
         );
+        const docDataObjs = await Promise.all(
+          docFiles.map(async (file) => ({
+            name: file.name,
+            value: await fileToDataUri(file),
+          })),
+        );
 
         const response = await apiClient.post("/chat", {
           message: text,
           chatId: activeChatId,
           images: imageDataUris,
           videos: videoDataUris,
+          documents: docDataObjs,
         });
 
         const newChatId = response.data.chatId;

@@ -32,10 +32,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
   }, []);
 
   const handleFiles = useCallback((incomingFiles) => {
-    const newFiles = Array.from(incomingFiles).filter(
-      (file) =>
-        file.type.startsWith("image/") || file.type.startsWith("video/"),
-    );
+    const newFiles = Array.from(incomingFiles);
     setFiles((prevFiles) => {
       const remainingSlots = maxFiles - prevFiles.length;
       if (remainingSlots <= 0) return prevFiles;

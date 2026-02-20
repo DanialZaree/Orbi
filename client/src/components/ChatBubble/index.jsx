@@ -6,6 +6,7 @@ import {
   Link as LinkIcon,
   ChevronDown,
   RotateCcw,
+  File,
 } from "lucide-react";
 import orbi from "../../assets/orbi.webp";
 import ReactMarkdown from "react-markdown";
@@ -266,7 +267,26 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
             );
           }
 
-          // 4. Render Text Blocks (With Typing Effect)
+          // 4. Render File Blocks
+          if (block.type === "file") {
+            return (
+              <div
+                key={index}
+                className="bg-dark-secondary-bg border-border-color flex max-w-xs items-center gap-3 rounded-lg border p-3"
+              >
+                <div className="bg-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <File className="text-white" size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">
+                    {block.fileName || "Attached File"}
+                  </p>
+                </div>
+              </div>
+            );
+          }
+
+          // 5. Render Text Blocks (With Typing Effect)
           if (typeof block.value === "string" && block.value.trim() !== "") {
             const isRtlText = isRTL(block.value);
             return (
