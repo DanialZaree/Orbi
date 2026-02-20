@@ -145,7 +145,12 @@ export default function App() {
 
   const handleSendMessage = useCallback(
     async ({ text, files }) => {
-      const filePreviews = files.map((file) => ({
+      const validFiles = files.filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/"),
+      );
+
+      const filePreviews = validFiles.map((file) => ({
         type: file.type.startsWith("video/") ? "video" : "image",
         value: URL.createObjectURL(file),
       }));
