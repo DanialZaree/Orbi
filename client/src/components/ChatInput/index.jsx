@@ -195,7 +195,6 @@ export default function ChatInput({ onSendMessage, disabled }) {
               ref={fileinputref}
               onChange={handleFileChange}
               className="hidden"
-              accept="image/*,video/*"
             />
 
             <div className="flex shrink-0 items-center gap-3 pr-1">

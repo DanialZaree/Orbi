@@ -9,7 +9,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 function dataUriToGenerativePart(dataUri) {
   try {
     const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/
+      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
     );
     if (!match) {
       throw new Error("Invalid data URI format");
@@ -18,6 +18,44 @@ function dataUriToGenerativePart(dataUri) {
   } catch (error) {
     console.error("Failed to parse data URI:", error.message);
     return null; // Return null to be filtered out
+  }
+}
+
+// Helper to check if a MIME type is text-based
+function isTextMime(mimeType) {
+  return (
+    mimeType.startsWith("text/") ||
+    mimeType === "application/json" ||
+    mimeType === "application/javascript" ||
+    mimeType === "application/x-javascript" ||
+    mimeType === "application/xml" ||
+    mimeType.endsWith("+xml") ||
+    mimeType.endsWith("+json")
+  );
+}
+
+// Helper to process document/file parts (extract text if text-based, else return inlineData)
+function processFilePart(dataUri, fileName = "unknown") {
+  try {
+    const match = dataUri.match(
+      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
+    );
+    if (!match) return null;
+
+    const mimeType = match[1];
+    const base64Data = match[2];
+
+    if (isTextMime(mimeType)) {
+      const textContent = Buffer.from(base64Data, "base64").toString("utf-8");
+      return {
+        text: `\n\n--- File: ${fileName} ---\n${textContent}\n`,
+      };
+    } else {
+      return { inlineData: { data: base64Data, mimeType } };
+    }
+  } catch (error) {
+    console.error("Failed to process file part:", error);
+    return null;
   }
 }
 
@@ -75,12 +113,10 @@ exports.sendMessage = async (req, res) => {
         role: msg.role === "assistant" ? "model" : "user",
         parts: msg.content
           .map((block) => {
-            if (
-              block.type === "image" ||
-              block.type === "video" ||
-              block.type === "file"
-            ) {
+            if (block.type === "image" || block.type === "video") {
               return dataUriToGenerativePart(block.value);
+            } else if (block.type === "file") {
+              return processFilePart(block.value, block.fileName);
             }
             return { text: block.value };
           })
@@ -101,7 +137,7 @@ exports.sendMessage = async (req, res) => {
       .filter((part) => part);
 
     const newDocumentParts = (documents || [])
-      .map((doc) => dataUriToGenerativePart(doc.value))
+      .map((doc) => processFilePart(doc.value, doc.name))
       .filter((part) => part);
 
     // Place image, video, and document parts *before* the text part for the API call
