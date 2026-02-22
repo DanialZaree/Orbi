@@ -184,7 +184,6 @@ export default function ChatInput({ onSendMessage, disabled }) {
             ref={fileinputref}
             onChange={handleFileChange}
             className="hidden"
-            accept="image/*,video/*"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
