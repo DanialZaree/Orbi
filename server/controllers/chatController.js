@@ -51,7 +51,8 @@ function parseGeminiResponse(responseText) {
 exports.sendMessage = async (req, res) => {
   try {
     // 1. Destructure skipUserSave from the request
-    const { message, chatId, images, videos, skipUserSave } = req.body;
+    const { message, chatId, images, videos, documents, skipUserSave } =
+      req.body;
     const userId = req.user._id.toString();
 
     let formattedHistory = [];
@@ -74,7 +75,11 @@ exports.sendMessage = async (req, res) => {
         role: msg.role === "assistant" ? "model" : "user",
         parts: msg.content
           .map((block) => {
-            if (block.type === "image" || block.type === "video") {
+            if (
+              block.type === "image" ||
+              block.type === "video" ||
+              block.type === "file"
+            ) {
               return dataUriToGenerativePart(block.value);
             }
             return { text: block.value };
@@ -95,10 +100,15 @@ exports.sendMessage = async (req, res) => {
       .map(dataUriToGenerativePart)
       .filter((part) => part);
 
-    // Place image and video parts *before* the text part for the API call
+    const newDocumentParts = (documents || [])
+      .map((doc) => dataUriToGenerativePart(doc.value))
+      .filter((part) => part);
+
+    // Place image, video, and document parts *before* the text part for the API call
     const userMessageParts = [
       ...newImageParts,
       ...newVideoParts,
+      ...newDocumentParts,
       { text: message },
     ];
 
@@ -127,6 +137,9 @@ exports.sendMessage = async (req, res) => {
         ...(videos || []).map((dataUri) => {
           const type = dataUri.startsWith("data:image/") ? "image" : "video";
           return { type, value: dataUri };
+        }),
+        ...(documents || []).map((doc) => {
+          return { type: "file", value: doc.value, fileName: doc.name };
         }),
         { type: "text", value: message },
       ],
