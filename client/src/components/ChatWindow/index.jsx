@@ -32,7 +32,7 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
   return (
     <div
       ref={chatContainerRef}
-      className="w-full flex-1 overflow-y-auto p-6 pt-12"
+      className="w-full flex-1 overflow-y-auto p-3 md:p-6 pt-12"
     >
       <div className="mx-auto w-full space-y-6 md:max-w-2xl">
         {messages &&

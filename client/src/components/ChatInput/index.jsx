@@ -180,7 +180,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
           <div className="flex w-full flex-row items-center gap-2 pb-1 pl-2 pr-1 pt-1">
             <textarea
               className="placeholder:text-secondary-text wrap-break-word max-h-40 w-full resize-none bg-transparent leading-6 text-white focus:outline-none"
-              placeholder="Ask ChatGPT"
+              placeholder="Ask Orbi..."
               onChange={handleChange}
               value={text}
               ref={textareaRef}
