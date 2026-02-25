@@ -210,7 +210,7 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
         </div>
       )}
       <div
-        className={`relative max-w-[85%] rounded-2xl px-1 py-1 wrap-break-word ${
+        className={`relative max-w-[95%] rounded-2xl px-1 py-1 wrap-break-word ${
           isUser ? "rounded-br-xs bg-blue-700/55" : "bg-surface"
         }`}
       >
