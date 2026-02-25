@@ -5,7 +5,7 @@ import {
   X,
   Sparkles,
   Lock,
-  Github ,
+  Github,
   Brain,
   LogOut,
 } from "lucide-react";
@@ -55,7 +55,10 @@ export default function SettingsPanel({ user, logout, onClose }) {
             </li>
             <div className="bg-border-color my-2 h-px"></div>
             <li>
-              <button className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
+              <button
+                disabled={true}
+                className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left"
+              >
                 <Brain size={16} />
                 Memory
               </button>
@@ -68,7 +71,7 @@ export default function SettingsPanel({ user, logout, onClose }) {
             </li>
             <li>
               <button className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
-                <Github  size={16} />
+                <Github size={16} />
                 Danial Zaree
               </button>
             </li>
