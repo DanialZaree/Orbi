@@ -57,7 +57,7 @@ export default function SettingsPanel({ user, logout, onClose }) {
             <li>
               <button
                 disabled={true}
-                className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                className="text-secondary-text flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Brain size={16} />
                 Memory
