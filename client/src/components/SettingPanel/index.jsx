@@ -5,7 +5,7 @@ import {
   X,
   Sparkles,
   Lock,
-  Mail,
+  Github ,
   Brain,
   LogOut,
 } from "lucide-react";
@@ -68,8 +68,8 @@ export default function SettingsPanel({ user, logout, onClose }) {
             </li>
             <li>
               <button className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
-                <Mail size={16} />
-                Contact Us
+                <Github  size={16} />
+                Danial Zaree
               </button>
             </li>
             <li className="mt-10">
