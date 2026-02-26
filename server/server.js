@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const securityHeaders = require("./middleware/securityHeaders");
 
 // Import the route modules
 const authRoutes = require("./routes/authRoutes");
@@ -14,6 +15,8 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 // --- MIDDLEWARE ---
+app.use(securityHeaders);
+
 app.use(
   cors({
     origin: "https://orbi-nine.vercel.app",
