@@ -52,7 +52,6 @@ const chatSchema = new mongoose.Schema(
       type: String,
       ref: "User",
       required: true,
-      index: true,
     },
     title: {
       type: String,
@@ -64,5 +63,8 @@ const chatSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+// optimize query performance for fetching chat history
+chatSchema.index({ userId: 1, updatedAt: -1 });
 
 module.exports = mongoose.model("Chat", chatSchema);
