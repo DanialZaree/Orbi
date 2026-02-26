@@ -10,6 +10,13 @@ import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
 import NotFound from "./components/NotFound";
 
+const generateId = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 function fileToDataUri(file) {
   return new Promise((resolve, reject) => {
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
@@ -59,7 +66,11 @@ export default function App() {
       setChatNotFound(false);
       try {
         const response = await apiClient.get(`/chat/${chatId}`);
-        setMessages(response.data.chat.messages);
+        const messagesWithIds = response.data.chat.messages.map((msg) => ({
+          ...msg,
+          _id: msg._id || generateId(),
+        }));
+        setMessages(messagesWithIds);
       } catch (error) {
         console.error("Failed to fetch chat messages:", error);
         setChatNotFound(true);
@@ -130,6 +141,7 @@ export default function App() {
       });
 
       const botMessage = {
+        _id: generateId(),
         role: "assistant",
         content: response.data.response,
         animate: true,
@@ -162,6 +174,7 @@ export default function App() {
 
       if (filePreviews.length > 0) {
         newUIMessages.push({
+          _id: generateId(),
           role: "user",
           content: filePreviews,
         });
@@ -169,6 +182,7 @@ export default function App() {
 
       if (text.trim() !== "") {
         newUIMessages.push({
+          _id: generateId(),
           role: "user",
           content: [{ type: "text", value: text }],
         });
@@ -224,6 +238,7 @@ export default function App() {
         }
 
         const botMessage = {
+          _id: generateId(),
           role: "assistant",
           content: response.data.response,
           animate: true,
@@ -237,6 +252,7 @@ export default function App() {
           errorMessageText = error.message;
         }
         const errorMessage = {
+          _id: generateId(),
           role: "assistant",
           content: [{ type: "text", value: errorMessageText }],
           animate: true,
