@@ -10,6 +10,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const app = express();
 const PORT = process.env.PORT ;
 
+app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 // --- MIDDLEWARE ---
