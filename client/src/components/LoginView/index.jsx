@@ -169,7 +169,7 @@ export default function LoginView() {
 
       {/* --- Modal --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[2] flex items-center justify-center backdrop-blur-sm">
+        <div className="fixed inset-0 z-2 flex items-center justify-center backdrop-blur-sm">
           {authToken && user ? (
             <SettingsPanel user={user} logout={logout} onClose={toggleModal} />
           ) : view === "signIn" ? (

@@ -2,135 +2,57 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const mongoose = require("mongoose");
 const Chat = require("../models/chat");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
+const {
+  dataUriToGenerativePart,
+  processFilePart,
+  parseGeminiResponse,
+} = require("../utils/chatHelpers");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-// Helper to convert Base64 data URI to a Gemini Part object
-function dataUriToGenerativePart(dataUri) {
-  try {
-    const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/,
-    );
-    if (!match) {
-      throw new Error("Invalid data URI format");
-    }
-    return { inlineData: { data: match[2], mimeType: match[1] } };
-  } catch (error) {
-    console.error("Failed to parse data URI:", error.message);
-    return null; // Return null to be filtered out
-  }
-}
-
-// Helper to upload video and get part
-async function videoDataUriToGenerativePart(dataUri) {
-  try {
-    const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/,
-    );
-    if (!match) {
-      throw new Error("Invalid data URI format");
-    }
-    const mimeType = match[1];
-    const base64Data = match[2];
-    const buffer = Buffer.from(base64Data, "base64");
-
-    // Create a temporary file
-    const tempFilePath = path.join(
-      os.tmpdir(),
-      `upload-${Date.now()}.${mimeType.split("/")[1]}`,
-    );
-    fs.writeFileSync(tempFilePath, buffer);
-
-    // Upload to Gemini
-    const uploadResult = await fileManager.uploadFile(tempFilePath, {
-      mimeType,
-      displayName: "User Video",
-    });
-
-    // Delete temp file
-    fs.unlinkSync(tempFilePath);
-
-    return {
-      fileData: {
-        mimeType: uploadResult.file.mimeType,
-        fileUri: uploadResult.file.uri,
-      },
-    };
-  } catch (error) {
-    console.error("Failed to process video:", error.message);
-    return null;
-  }
-}
-
-// Helper to parse the AI's text response
-function parseGeminiResponse(responseText) {
-  const contentArray = [];
-  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match;
-  while ((match = codeBlockRegex.exec(responseText)) !== null) {
-    if (match.index > lastIndex) {
-      const textBlock = responseText.substring(lastIndex, match.index).trim();
-      if (textBlock) contentArray.push({ type: "text", value: textBlock });
-    }
-    const codeBlock = match[2].trim();
-    if (codeBlock)
-      contentArray.push({
-        type: "code",
-        language: match[1] || "plaintext",
-        value: codeBlock,
-      });
-  }
-  if (lastIndex < responseText.length) {
-    const finalTextBlock = responseText.substring(lastIndex).trim();
-    if (finalTextBlock)
-      contentArray.push({ type: "text", value: finalTextBlock });
-  }
-  return contentArray;
-}
-
 exports.sendMessage = async (req, res) => {
   try {
-    const { message, chatId, images, videos } = req.body;
+    // 1. Destructure skipUserSave from the request
+    const { message, chatId, images, videos, documents, skipUserSave } =
+      req.body;
     const userId = req.user._id.toString();
 
     let formattedHistory = [];
-    let currentChat;
+    let currentChat;
 
-    if (chatId) {
-      if (!mongoose.Types.ObjectId.isValid(chatId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid chat ID format." });
-      }
-      currentChat = await Chat.findOne({ _id: chatId, userId: userId });
-      if (!currentChat) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Chat not found." });
-      }
-      // Re-format database history for Gemini, including any past images/videos
+    if (chatId) {
+      if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid chat ID format." });
+      }
+      currentChat = await Chat.findOne({ _id: chatId, userId: userId });
+      if (!currentChat) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Chat not found." });
+      }
+      // Re-format database history for Gemini
       formattedHistory = currentChat.messages.map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: msg.content
           .map((block) => {
             if (block.type === "image" || block.type === "video") {
               return dataUriToGenerativePart(block.value);
+            } else if (block.type === "file") {
+              return processFilePart(block.value, block.fileName);
             }
             return { text: block.value };
           })
-          .filter((part) => part), // Filter out any null/invalid parts
+          .filter((part) => part),
       }));
-    }
+    }
 
-    const systemInstruction = {
-    // ... (your system instruction remains the same) ...
-    };
+    const systemInstruction = {
+      // ... (your system instruction remains the same) ...
+    };
 
     const newImageParts = (images || [])
       .map(dataUriToGenerativePart)
@@ -145,10 +67,15 @@ exports.sendMessage = async (req, res) => {
       }
     }
 
-    // Place image and video parts *before* the text part for the API call
+    const newDocumentParts = (documents || [])
+      .map((doc) => processFilePart(doc.value, doc.name))
+      .filter((part) => part);
+
+    // Place image, video, and document parts *before* the text part for the API call
     const userMessageParts = [
       ...newImageParts,
       ...newVideoParts,
+      ...newDocumentParts,
       { text: message },
     ];
 
@@ -166,40 +93,65 @@ exports.sendMessage = async (req, res) => {
     const responseText = response.text();
     const parsedContent = parseGeminiResponse(responseText);
 
-    // Save to DB with images and videos *before* text
+    // Prepare the User Message object
     const userMessage = {
       role: "user",
       content: [
-        // Place the images first
-        ...(images || []).map((dataUri) => ({ type: "image", value: dataUri })),
-        // Place the videos next
-        ...(videos || []).map((dataUri) => ({ type: "video", value: dataUri })),
-        // Place the text last
+        ...(images || []).map((dataUri) => {
+          const type = dataUri.startsWith("data:video/") ? "video" : "image";
+          return { type, value: dataUri };
+        }),
+        ...(videos || []).map((dataUri) => {
+          const type = dataUri.startsWith("data:image/") ? "image" : "video";
+          return { type, value: dataUri };
+        }),
+        ...(documents || []).map((doc) => {
+          return { type: "file", value: doc.value, fileName: doc.name };
+        }),
         { type: "text", value: message },
       ],
     };
-    const assistantMessage = { role: "assistant", content: parsedContent };
 
-    let newChatData = null;
-    if (!currentChat) {
-    // ... (title generation logic remains the same) ...
-    }
+    // Prepare the Assistant Message object
+    const assistantMessage = { role: "assistant", content: parsedContent };
 
-    currentChat.messages.push(userMessage, assistantMessage);
-    await currentChat.save();
+    let newChatData = null;
 
-    res.json({
-      success: true,
-      response: parsedContent,
-      chatId: currentChat._id,
-      newChat: newChatData,
-    });
-  } catch (error) {
-    console.error("Error with Gemini API or DB:", error.message);
-    res
-      .status(500)
-      .json({ success: false, message: "Error communicating with the AI." });
-  }
+    // Handle New Chat Creation
+    if (!currentChat) {
+
+      const firstText = (message || "").trim();
+      let generatedTitle = firstText ? firstText.slice(0, 50) : "New Chat";
+      if (firstText.length > 50) generatedTitle += "...";
+
+      currentChat = new Chat({
+        userId: userId,
+        title: generatedTitle,
+        messages: [],
+      });
+      newChatData = { _id: currentChat._id, title: currentChat.title };
+    }
+
+    if (skipUserSave && currentChat) {
+      currentChat.messages.push(assistantMessage);
+    } else {
+      currentChat.messages.push(userMessage, assistantMessage);
+    }
+
+    await currentChat.save();
+
+    res.json({
+      success: true,
+      response: parsedContent,
+      chatId: currentChat._id,
+      newChat: newChatData,
+    });
+  } catch (error) {
+    console.error("Error with Gemini API or DB:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Error communicating with the AI." });
+  }
 };
 
 exports.getChatHistory = async (req, res) => {
@@ -257,23 +209,19 @@ exports.renameChatById = async (req, res) => {
     const updatedChat = await Chat.findOneAndUpdate(
       { _id: chatId, userId: userId },
       { $set: { title: newTitle } },
-      { new: true },
+      { new: true }
     );
     if (!updatedChat) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Chat not found or permission denied.",
-        });
-    }
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Chat renamed successfully.",
-        chat: updatedChat,
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found or permission denied.",
       });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Chat renamed successfully.",
+      chat: updatedChat,
+    });
   } catch (error) {
     console.error("Error renaming chat:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
@@ -294,18 +242,55 @@ exports.deleteChatById = async (req, res) => {
       userId: userId,
     });
     if (!result) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Chat not found or you do not have permission to delete it.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found or you do not have permission to delete it.",
+      });
     }
     res
       .status(200)
       .json({ success: true, message: "Chat deleted successfully." });
   } catch (error) {
     console.error("Error deleting chat:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+exports.deleteLastMessage = async (req, res) => {
+  try {
+    const { id: chatId } = req.params;
+    const userId = req.user._id.toString();
+
+    // 1. Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid chat ID format." });
+    }
+
+    // 2. Find the chat
+    const chat = await Chat.findOne({ _id: chatId, userId: userId });
+
+    if (!chat) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Chat not found or access denied." });
+    }
+
+    // 3. Remove the last message
+    if (chat.messages && chat.messages.length > 0) {
+      chat.messages.pop(); // Remove the last item from the array
+      await chat.save(); // Save the update to MongoDB
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Last message deleted successfully." });
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: "No messages to delete." });
+    }
+  } catch (error) {
+    console.error("Error deleting last message:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
   }
 };

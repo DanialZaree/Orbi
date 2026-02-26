@@ -84,19 +84,82 @@ export default function App() {
     setChatNotFound(false);
   }, [setLocation]);
 
-  // --- THIS IS THE FIX: This function now splits images and text into separate messages ---
+  // --- UPDATED REGENERATE FUNCTION ---
+  // This version deletes the bad response from the DB so it doesn't return on refresh.
+  const handleRegenerate = useCallback(async () => {
+    if (isLoading || messages.length === 0) return;
+
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role === "user") return;
+
+    console.log("Regenerating... Deleting old AI message.");
+
+    // 1. Remove Old AI Message from UI
+    setMessages((prev) => {
+      const newHistory = [...prev];
+      newHistory.pop();
+      return newHistory;
+    });
+    setIsLoading(true);
+
+    try {
+      // 2. Delete Old AI Message from DB
+      if (activeChatId) {
+        await apiClient.delete(`/chat/${activeChatId}/last`);
+      }
+
+      // 3. Get the original User Prompt
+      const promptMsg = messages[messages.length - 2];
+
+      let textContent = "";
+      if (typeof promptMsg.content === "string") {
+        textContent = promptMsg.content;
+      } else if (Array.isArray(promptMsg.content)) {
+        textContent = promptMsg.content
+          .filter((block) => block.type === "text")
+          .map((block) => block.value)
+          .join("\n");
+      }
+
+      // 4. Send Request with 'skipUserSave: true'
+      // This prevents the "Duplicate User Text" issue
+      const response = await apiClient.post("/chat", {
+        message: textContent,
+        chatId: activeChatId,
+        skipUserSave: true, // <--- ADD THIS LINE
+      });
+
+      const botMessage = {
+        role: "assistant",
+        content: response.data.response,
+        animate: true,
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Regeneration Error:", error);
+      // ... error handling
+    } finally {
+      setIsLoading(false);
+    }
+  }, [messages, activeChatId, isLoading]);
+
   const handleSendMessage = useCallback(
     async ({ text, files }) => {
-      // 1. Create temporary "blob" URLs for the UI
-      const filePreviews = files.map((file) => ({
-        type: file.type.startsWith("video/") ? "video" : "image",
-        value: URL.createObjectURL(file),
-      }));
+      const filePreviews = files.map((file) => {
+        let type = "file";
+        if (file.type.startsWith("image/")) type = "image";
+        if (file.type.startsWith("video/")) type = "video";
 
-      // 2. Create a list of new messages to add to the UI
+        return {
+          type,
+          value: URL.createObjectURL(file),
+          fileName: file.name,
+        };
+      });
+
       const newUIMessages = [];
 
-      // If there are images or videos, create a media-only message
       if (filePreviews.length > 0) {
         newUIMessages.push({
           role: "user",
@@ -104,7 +167,6 @@ export default function App() {
         });
       }
 
-      // If there is text, create a text-only message
       if (text.trim() !== "") {
         newUIMessages.push({
           role: "user",
@@ -112,20 +174,21 @@ export default function App() {
         });
       }
 
-      // 3. If there's nothing to send, do nothing.
       if (newUIMessages.length === 0) return;
 
-      // 4. Add all new user messages to the state at once
       setMessages((prevMessages) => [...prevMessages, ...newUIMessages]);
       setIsLoading(true);
 
       try {
-        // 5. Convert files to Base64 for the API
         const imageFiles = files.filter((file) =>
           file.type.startsWith("image/"),
         );
         const videoFiles = files.filter((file) =>
           file.type.startsWith("video/"),
+        );
+        const docFiles = files.filter(
+          (file) =>
+            !file.type.startsWith("image/") && !file.type.startsWith("video/"),
         );
 
         const imageDataUris = await Promise.all(
@@ -134,13 +197,19 @@ export default function App() {
         const videoDataUris = await Promise.all(
           videoFiles.map((file) => fileToDataUri(file)),
         );
+        const docDataObjs = await Promise.all(
+          docFiles.map(async (file) => ({
+            name: file.name,
+            value: await fileToDataUri(file),
+          })),
+        );
 
-        // 6. Send the API request (this logic is the same)
         const response = await apiClient.post("/chat", {
           message: text,
           chatId: activeChatId,
           images: imageDataUris,
           videos: videoDataUris,
+          documents: docDataObjs,
         });
 
         const newChatId = response.data.chatId;
@@ -154,16 +223,12 @@ export default function App() {
           ]);
         }
 
-        // 7. Add the bot's response as a new message
         const botMessage = {
           role: "assistant",
           content: response.data.response,
+          animate: true,
         };
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          ...newUIMessages,
-          botMessage,
-        ]);
+        setMessages((prevMessages) => [...prevMessages, botMessage]);
       } catch (error) {
         console.error("Error sending message:", error);
         let errorMessageText =
@@ -174,16 +239,11 @@ export default function App() {
         const errorMessage = {
           role: "assistant",
           content: [{ type: "text", value: errorMessageText }],
+          animate: true,
         };
-        // 8. Add the error message as a new message
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          ...newUIMessages,
-          errorMessage,
-        ]);
+        setMessages((prevMessages) => [...prevMessages, errorMessage]);
       } finally {
         setIsLoading(false);
-        // 9. Revoke the temporary blob URLs
         filePreviews.forEach((file) => URL.revokeObjectURL(file.value));
       }
     },
@@ -200,14 +260,18 @@ export default function App() {
         onNewChat={handleNewChat}
       />
       <main className="relative flex h-full w-full flex-1 flex-col font-sans">
-        <div className="mx-auto flex w-full  flex-1 flex-col items-center overflow-hidden">
-          <div className="chatwindow w-full  flex-1 overflow-y-auto py-4">
+        <div className="mx-auto flex w-full flex-1 flex-col items-center overflow-hidden">
+          <div className="chatwindow w-full flex-1 overflow-y-auto py-4">
             <Switch>
               <Route path="/:chatId">
                 {chatNotFound ? (
                   <NotFound />
                 ) : (
-                  <ChatWindow messages={messages} isLoading={isLoading} />
+                  <ChatWindow
+                    messages={messages}
+                    isLoading={isLoading}
+                    onRegenerate={handleRegenerate} // <--- PASSED HERE
+                  />
                 )}
               </Route>
               <Route path="/">

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Mic, Plus, X, Forward, File } from "lucide-react";
+import { Mic, Plus, X, ArrowUp, File } from "lucide-react";
 
 // --- ADDED: Receive onSendMessage and disabled props from the parent component (App.jsx) ---
 export default function ChatInput({ onSendMessage, disabled }) {
@@ -107,21 +107,29 @@ export default function ChatInput({ onSendMessage, disabled }) {
   const isFileLimitReached = files.length >= maxFiles;
 
   return (
-    // --- ADDED: Wrap everything in a form for proper submission handling ---
-    <form
+<form
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
       className="sticky bottom-0 mx-auto mt-auto w-full self-end py-4"
     >
-      <div className="mx-auto max-w-3xl px-4">
+      <div className="mx-auto flex max-w-3xl flex-row items-end gap-2 px-2 sm:px-4">
+        
+        <button
+          type="button"
+          onClick={handleAddClick}
+          disabled={isFileLimitReached}
+          className="border-border-color bg-dark-secondary-bg mb-1 flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 text-white/70 transition-colors hover:bg-dark-third-bg hover:text-white"
+          aria-label="Add file"
+        >
+          <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
+        </button>
+
         <div
           onPaste={handlePaste}
-          className="border-border-color bg-dark-secondary-bg flex flex-col gap-2 rounded-2xl border-2 p-2 shadow-[0px_4px_10px_0px] shadow-blue-600/10"
+          className="border-border-color bg-dark-secondary-bg flex min-h-12 w-full flex-col rounded-4xl border-2 px-2 py-1 pr-0"
         >
           <div
-            className={`flex flex-col rounded-2xl p-2 ${
-              files.length === 0 ? "hidden" : ""
-            }`}
+            className={`flex flex-col p-2 ${files.length === 0 ? "hidden" : ""}`}
           >
             {files.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -148,9 +156,9 @@ export default function ChatInput({ onSendMessage, disabled }) {
                         />
                       )}
                     {!fileWrapper.preview && (
-                      <div className="bg-surface flex h-full w-full flex-col items-center justify-center p-1">
-                        <File />
-                        <span className="mt-2 w-full truncate px-1 text-center text-xs leading-tight break-all text-white">
+                      <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-700 p-1">
+                        <File size={20} className="text-white/70" />
+                        <span className="mt-1 w-full truncate break-all px-1 text-center text-[10px] leading-tight text-white">
                           {fileWrapper.file.name}
                         </span>
                       </div>
@@ -158,62 +166,46 @@ export default function ChatInput({ onSendMessage, disabled }) {
                     <button
                       type="button"
                       onClick={() => handleRemoveFile(index)}
-                      className="absolute top-1 right-1 z-10 cursor-pointer rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                      className="absolute right-1 top-1 z-10 cursor-pointer rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                       aria-label="Remove file"
                     >
-                      <X size={16} />
+                      <X size={14} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <textarea
-            className="placeholder:text-secondary-text max-h-40 w-full resize-none bg-transparent px-3 py-2 leading-6 wrap-break-word text-white focus:outline-0"
-            placeholder="Ask ORBI :)"
-            onChange={handleChange}
-            value={text}
-            ref={textareaRef}
-            rows={1}
-            name="chat-input"
-            id="chat-input"
-          ></textarea>
-          <input
-            type="file"
-            multiple
-            ref={fileinputref}
-            onChange={handleFileChange}
-            className="hidden"
-            accept="image/*,video/*"
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+
+          <div className="flex w-full flex-row items-center gap-2 pb-1 pl-2 pr-1 pt-1">
+            <textarea
+              className="placeholder:text-secondary-text wrap-break-word max-h-40 w-full resize-none bg-transparent leading-6 text-white focus:outline-none"
+              placeholder="Ask Orbi..."
+              onChange={handleChange}
+              value={text}
+              ref={textareaRef}
+              rows={1}
+              name="chat-input"
+              id="chat-input"
+            ></textarea>
+
+            <input
+              type="file"
+              multiple
+              ref={fileinputref}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <div className="flex shrink-0 items-center gap-3 pr-1">
+              
               <button
-                type="button"
-                onClick={handleAddClick}
-                disabled={isFileLimitReached}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-white/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Add file"
-              >
-                <Plus />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button" // --- ADDED: type="button" to prevent form submission ---
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-white/70 hover:text-white"
-                aria-label="Use microphone"
-                disabled={disabled}
-              >
-                <Mic />
-              </button>
-              <button
-                type="submit" // --- ADDED: type="submit" to trigger form's onSubmit --- just kidding
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                type="submit"
+                className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-600 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Send message"
                 disabled={disabled}
               >
-                <Forward size={24} />
+                <ArrowUp className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.5} />
               </button>
             </div>
           </div>

@@ -8,10 +8,18 @@ const authRoutes = require("./routes/authRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT ;
+
+app.set('trust proxy', 1);
 
 // --- MIDDLEWARE ---
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(
+  cors({
+    origin: "https://orbi-nine.vercel.app",
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "10mb" }));
 
 // --- DATABASE CONNECTION ---

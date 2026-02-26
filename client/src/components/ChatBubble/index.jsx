@@ -1,5 +1,13 @@
-import { useState, useEffect } from "react";
-import { Bot, Copy, Check, Link as LinkIcon, ChevronDown } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Bot,
+  Copy,
+  Check,
+  Link as LinkIcon,
+  ChevronDown,
+  RotateCcw,
+  File,
+} from "lucide-react";
 import orbi from "../../assets/orbi.webp";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,13 +17,37 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-// This function checks if the text contains characters from the Arabic script Unicode range.
+// --- Helper: RTL Detection ---
 function isRTL(text) {
   const rtlRegex = /[\u0600-\u06FF]/;
   return rtlRegex.test(text);
 }
 
-// --- Shiki Highlighter ---
+// --- Helper: Shared Markdown Components ---
+// We define this here so both the Typewriter and the static view use the EXACT same styling.
+const MARKDOWN_COMPONENTS = {
+  p: ({ node, children }) => {
+    if (
+      node.children[0]?.type === "element" &&
+      node.children[0]?.properties?.className?.includes("math-display")
+    ) {
+      return <div className="my-4 flex justify-center">{children}</div>;
+    }
+    return <p className="my-3 first:mt-0 last:mb-0">{children}</p>;
+  },
+  a: ({ node, ...props }) => (
+    <a
+      {...props}
+      className="inline-flex items-center gap-1 text-blue-400 hover:underline"
+    >
+      {props.children} <LinkIcon size={12} />
+    </a>
+  ),
+  ul: ({ node, ...props }) => <ul {...props} className="my-3 list-none pl-0" />,
+  ol: ({ node, ...props }) => <ol {...props} className="my-3 list-none pl-0" />,
+};
+
+// --- Helper: Shiki Highlighter ---
 const highlighterPromise = createHighlighter({
   themes: ["tokyo-night"],
   langs: [
@@ -32,7 +64,7 @@ const highlighterPromise = createHighlighter({
   ],
 });
 
-// --- ShikiCodeBlock Component ---
+// --- Component: Code Block ---
 function ShikiCodeBlock({ code, lang }) {
   const [htmlBlock, setHtmlBlock] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -51,7 +83,7 @@ function ShikiCodeBlock({ code, lang }) {
         if (isMounted) setHtmlBlock(html);
       } catch (error) {
         console.warn(
-          `Shiki language "${lang}" not found. Falling back to plaintext.`,
+          `Shiki language "${lang}" not found. Falling back to plaintext.`
         );
         if (isMounted) {
           const fallbackHtml = highlighter.codeToHtml(code, {
@@ -103,8 +135,68 @@ function ShikiCodeBlock({ code, lang }) {
   );
 }
 
-export default function ChatBubble({ message, isLastMessage }) {
+// --- Component: Typewriter ---
+// Fix applied: Changed state update logic from concatenation to slice
+function Typewriter({ text, speed = 10 }) {
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    let i = 0;
+    setDisplayedText(""); // Reset when text prop changes
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        // FIX: Use slice instead of prev + charAt(i). 
+        // This prevents state batching glitches that skip characters.
+        setDisplayedText(text.slice(0, i + 1));
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[
+        [
+          rehypeExternalLinks,
+          { target: "_blank", rel: ["noopener", "noreferrer"] },
+        ],
+        rehypeKatex,
+      ]}
+      components={MARKDOWN_COMPONENTS}
+    >
+      {displayedText}
+    </ReactMarkdown>
+  );
+}
+
+// --- Main Component: ChatBubble ---
+export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
   const isUser = message.role === "user";
+  const [isMessageCopied, setIsMessageCopied] = useState(false);
+
+  // Function to copy the entire message content
+  const handleCopyMessage = () => {
+    const allText = message.content
+      ?.map((block) => {
+        if (block.type === "text" || block.type === "code") {
+          return block.value;
+        }
+        return "";
+      })
+      .join("\n");
+
+    if (allText) {
+      navigator.clipboard.writeText(allText).then(() => {
+        setIsMessageCopied(true);
+        setTimeout(() => setIsMessageCopied(false), 2000);
+      });
+    }
+  };
 
   return (
     <div
@@ -118,7 +210,7 @@ export default function ChatBubble({ message, isLastMessage }) {
         </div>
       )}
       <div
-        className={`relative max-w-[85%] rounded-2xl px-1 py-1 wrap-break-word ${
+        className={`relative max-w-[95%] rounded-2xl px-1 py-1 wrap-break-word ${
           isUser ? "rounded-br-xs bg-blue-700/55" : "bg-surface"
         }`}
       >
@@ -136,44 +228,37 @@ export default function ChatBubble({ message, isLastMessage }) {
 
           // 2. Render Image Blocks
           if (block.type === "image") {
-            // Check if the "image" is actually a video (data URI or blob)
-            const isVideo =
+            if (
               typeof block.value === "string" &&
-              (block.value.startsWith("data:video/") ||
-                block.value.startsWith("blob:") /* We might need more check for blob, but usually blob video has specific type */);
-
-            // If we can infer it's a video from the src, render as video
-            // Note: blob: URLs for videos don't explicitly say "video" in the string,
-            // but checking the start of data URI is safe. For blobs, if we are unsure, we might fail.
-            // However, the optimistic update in App.jsx sets type='video' correctly now.
-            // This fallback is mainly for 'data:video/...' stored as 'image' in DB.
-            if (block.value?.startsWith("data:video/")) {
+              block.value.startsWith("data:video/")
+            ) {
               return (
                 <video
                   key={index}
                   src={block.value}
                   controls
-                  className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
+                  className="max-h-[450px] w-full max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
                 >
                   Your browser does not support the video tag.
                 </video>
               );
             }
-
             return (
               <img
                 key={index}
-                src={block.value} // This will be the blob: or data: URL
+                src={block.value}
                 alt="User uploaded content"
                 className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
               />
             );
           }
+
+          // 3. Render Video Blocks
           if (block.type === "video") {
             return (
               <video
                 key={index}
-                src={block.value} // This will be the blob: or data: URL
+                src={block.value}
                 controls
                 className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
               >
@@ -181,7 +266,27 @@ export default function ChatBubble({ message, isLastMessage }) {
               </video>
             );
           }
-          // 3. Render Text Blocks (and skip empty text)
+
+          // 4. Render File Blocks
+          if (block.type === "file") {
+            return (
+              <div
+                key={index}
+                className="bg-dark-secondary-bg border-border-color flex max-w-xs items-center gap-3 rounded-lg border p-3"
+              >
+                <div className="bg-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <File className="text-white" size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">
+                    {block.fileName || "Attached File"}
+                  </p>
+                </div>
+              </div>
+            );
+          }
+
+          // 5. Render Text Blocks (With Typing Effect)
           if (typeof block.value === "string" && block.value.trim() !== "") {
             const isRtlText = isRTL(block.value);
             return (
@@ -190,17 +295,11 @@ export default function ChatBubble({ message, isLastMessage }) {
                 className={`prose-sm prose prose-invert px-2 py-1`}
                 dir={isRtlText ? "rtl" : "ltr"}
               >
-                {/* We still apply the typing effect for the last AI message */}
-                {!isUser && isLastMessage ? (
-                  <TextType
-                    text={block.value}
-                    typingSpeed={20}
-                    loop={false}
-                    showCursor={true}
-                    cursorCharacter="█"
-                    className="prose prose-invert prose-sm"
-                  />
+                {!isUser && isLastMessage && message.animate ? (
+                  // If it's the AI's last message and it's new, use the Typewriter effect
+                  <Typewriter text={block.value} speed={10} />
                 ) : (
+                  // Otherwise, render static Markdown
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[
@@ -210,41 +309,7 @@ export default function ChatBubble({ message, isLastMessage }) {
                       ],
                       rehypeKatex,
                     ]}
-                    components={{
-                      p: ({ node, children }) => {
-                        if (
-                          node.children[0]?.type === "element" &&
-                          node.children[0]?.properties?.className?.includes(
-                            "math-display",
-                          )
-                        ) {
-                          return (
-                            <div className="my-4 flex justify-center">
-                              {children}
-                            </div>
-                          );
-                        }
-                        return (
-                          <p className="my-3 first:mt-0 last:mb-0">
-                            {children}
-                          </p>
-                        );
-                      },
-                      a: ({ node, ...props }) => (
-                        <a
-                          {...props}
-                          className="inline-flex items-center gap-1 text-blue-400 hover:underline"
-                        >
-                          {props.children} <LinkIcon size={12} />
-                        </a>
-                      ),
-                      ul: ({ node, ...props }) => (
-                        <ul {...props} className="my-3 list-none pl-0" />
-                      ),
-                      ol: ({ node, ...props }) => (
-                        <ol {...props} className="my-3 list-none pl-0" />
-                      ),
-                    }}
+                    components={MARKDOWN_COMPONENTS}
                   >
                     {block.value}
                   </ReactMarkdown>
@@ -254,6 +319,32 @@ export default function ChatBubble({ message, isLastMessage }) {
           }
           return null;
         })}
+
+        {!isUser && (
+          <div className="flex items-center justify-start gap-2 mt-2">
+            <button
+              onClick={handleCopyMessage}
+              className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
+              title="Copy response"
+            >
+              {isMessageCopied ? (
+                <Check size={16} className="text-gray-500" />
+              ) : (
+                <Copy size={16} />
+              )}
+            </button>
+
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
+                title="Regenerate response"
+              >
+                <RotateCcw size={16} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

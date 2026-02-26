@@ -5,7 +5,7 @@ import {
   X,
   Sparkles,
   Lock,
-  Mail,
+  Github,
   Brain,
   LogOut,
 } from "lucide-react";
@@ -55,7 +55,10 @@ export default function SettingsPanel({ user, logout, onClose }) {
             </li>
             <div className="bg-border-color my-2 h-px"></div>
             <li>
-              <button className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
+              <button
+                disabled={true}
+                className="text-secondary-text flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <Brain size={16} />
                 Memory
               </button>
@@ -67,10 +70,10 @@ export default function SettingsPanel({ user, logout, onClose }) {
               </button>
             </li>
             <li>
-              <button className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
-                <Mail size={16} />
-                Contact Us
-              </button>
+              <a href="https://github.com/danialzaree" className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
+                <Github size={16} />
+                Danial Zaree
+              </a>
             </li>
             <li className="mt-10">
               <button
@@ -88,7 +91,7 @@ export default function SettingsPanel({ user, logout, onClose }) {
             <div className="flex flex-col items-center gap-4 text-center">
               {user.picture && (
                 <img
-                  src={user.picture}
+                  src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
                   alt="User Profile"
                   className="h-24 w-24 rounded-full border-2 border-blue-500 object-cover"
                 />
