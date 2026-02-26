@@ -1,104 +1,16 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const mongoose = require("mongoose");
 const Chat = require("../models/chat");
+const {
+  dataUriToGenerativePart,
+  processFilePart,
+  parseGeminiResponse,
+} = require("../utils/chatHelpers");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-// Helper to convert Base64 data URI to a Gemini Part object
-function dataUriToGenerativePart(dataUri) {
-  try {
-    if (!dataUri || typeof dataUri !== "string" || !dataUri.startsWith("data:")) {
-      return null;
-    }
-    const commaIndex = dataUri.indexOf(",");
-    if (commaIndex === -1) return null;
-
-    const header = dataUri.substring(0, commaIndex);
-    const base64Index = header.lastIndexOf(";base64");
-    if (base64Index === -1) return null;
-
-    const mimeType = header.substring(5, base64Index);
-    const base64Data = dataUri.substring(commaIndex + 1);
-
-    return { inlineData: { data: base64Data, mimeType } };
-  } catch (error) {
-    console.error("Failed to parse data URI:", error.message);
-    return null; // Return null to be filtered out
-  }
-}
-
-// Helper to check if a MIME type is text-based
-function isTextMime(mimeType) {
-  return (
-    mimeType.startsWith("text/") ||
-    mimeType === "application/json" ||
-    mimeType === "application/javascript" ||
-    mimeType === "application/x-javascript" ||
-    mimeType === "application/xml" ||
-    mimeType.endsWith("+xml") ||
-    mimeType.endsWith("+json")
-  );
-}
-
-// Helper to process document/file parts (extract text if text-based, else return inlineData)
-function processFilePart(dataUri, fileName = "unknown") {
-  try {
-    if (!dataUri || typeof dataUri !== "string" || !dataUri.startsWith("data:")) {
-      return null;
-    }
-    const commaIndex = dataUri.indexOf(",");
-    if (commaIndex === -1) return null;
-
-    const header = dataUri.substring(0, commaIndex);
-    const base64Index = header.lastIndexOf(";base64");
-    if (base64Index === -1) return null;
-
-    const mimeType = header.substring(5, base64Index);
-    const base64Data = dataUri.substring(commaIndex + 1);
-
-    if (isTextMime(mimeType)) {
-      const textContent = Buffer.from(base64Data, "base64").toString("utf-8");
-      return {
-        text: `\n\n--- File: ${fileName} ---\n${textContent}\n`,
-      };
-    } else {
-      return { inlineData: { data: base64Data, mimeType } };
-    }
-  } catch (error) {
-    console.error("Failed to process file part:", error);
-    return null;
-  }
-}
-
-// Helper to parse the AI's text response
-function parseGeminiResponse(responseText) {
-  const contentArray = [];
-  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match;
-  while ((match = codeBlockRegex.exec(responseText)) !== null) {
-    if (match.index > lastIndex) {
-      const textBlock = responseText.substring(lastIndex, match.index).trim();
-      if (textBlock) contentArray.push({ type: "text", value: textBlock });
-    }
-    const codeBlock = match[2].trim();
-    if (codeBlock)
-      contentArray.push({
-        type: "code",
-        language: match[1] || "plaintext",
-        value: codeBlock,
-      });
-  }
-  if (lastIndex < responseText.length) {
-    const finalTextBlock = responseText.substring(lastIndex).trim();
-    if (finalTextBlock)
-      contentArray.push({ type: "text", value: finalTextBlock });
-  }
-  return contentArray;
-}
-
-const MAX_HISTORY_MESSAGES = 40;
 
 exports.sendMessage = async (req, res) => {
   try {
@@ -149,9 +61,14 @@ exports.sendMessage = async (req, res) => {
       .map(dataUriToGenerativePart)
       .filter((part) => part);
 
-    const newVideoParts = (videos || [])
-      .map(dataUriToGenerativePart)
-      .filter((part) => part);
+    // Process videos sequentially because upload is async
+    const newVideoParts = [];
+    if (videos && videos.length > 0) {
+      for (const video of videos) {
+        const part = await videoDataUriToGenerativePart(video);
+        if (part) newVideoParts.push(part);
+      }
+    }
 
     const newDocumentParts = (documents || [])
       .map((doc) => processFilePart(doc.value, doc.name))
