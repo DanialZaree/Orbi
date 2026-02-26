@@ -136,6 +136,30 @@ export default function ChatBubble({ message, isLastMessage }) {
 
           // 2. Render Image Blocks
           if (block.type === "image") {
+            // Check if the "image" is actually a video (data URI or blob)
+            const isVideo =
+              typeof block.value === "string" &&
+              (block.value.startsWith("data:video/") ||
+                block.value.startsWith("blob:") /* We might need more check for blob, but usually blob video has specific type */);
+
+            // If we can infer it's a video from the src, render as video
+            // Note: blob: URLs for videos don't explicitly say "video" in the string,
+            // but checking the start of data URI is safe. For blobs, if we are unsure, we might fail.
+            // However, the optimistic update in App.jsx sets type='video' correctly now.
+            // This fallback is mainly for 'data:video/...' stored as 'image' in DB.
+            if (block.value?.startsWith("data:video/")) {
+              return (
+                <video
+                  key={index}
+                  src={block.value}
+                  controls
+                  className="max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              );
+            }
+
             return (
               <img
                 key={index}

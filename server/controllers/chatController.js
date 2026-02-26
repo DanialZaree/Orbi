@@ -1,8 +1,13 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const mongoose = require("mongoose");
 const Chat = require("../models/chat");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // Helper to convert Base64 data URI to a Gemini Part object
@@ -18,6 +23,47 @@ function dataUriToGenerativePart(dataUri) {
   } catch (error) {
     console.error("Failed to parse data URI:", error.message);
     return null; // Return null to be filtered out
+  }
+}
+
+// Helper to upload video and get part
+async function videoDataUriToGenerativePart(dataUri) {
+  try {
+    const match = dataUri.match(
+      /^data:([a-zA-Z0-9\/+]+);base64,([a-zA-Z0-9+/=]+)$/,
+    );
+    if (!match) {
+      throw new Error("Invalid data URI format");
+    }
+    const mimeType = match[1];
+    const base64Data = match[2];
+    const buffer = Buffer.from(base64Data, "base64");
+
+    // Create a temporary file
+    const tempFilePath = path.join(
+      os.tmpdir(),
+      `upload-${Date.now()}.${mimeType.split("/")[1]}`,
+    );
+    fs.writeFileSync(tempFilePath, buffer);
+
+    // Upload to Gemini
+    const uploadResult = await fileManager.uploadFile(tempFilePath, {
+      mimeType,
+      displayName: "User Video",
+    });
+
+    // Delete temp file
+    fs.unlinkSync(tempFilePath);
+
+    return {
+      fileData: {
+        mimeType: uploadResult.file.mimeType,
+        fileUri: uploadResult.file.uri,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to process video:", error.message);
+    return null;
   }
 }
 
@@ -90,9 +136,14 @@ exports.sendMessage = async (req, res) => {
       .map(dataUriToGenerativePart)
       .filter((part) => part);
 
-    const newVideoParts = (videos || [])
-      .map(dataUriToGenerativePart)
-      .filter((part) => part);
+    // Process videos sequentially because upload is async
+    const newVideoParts = [];
+    if (videos && videos.length > 0) {
+      for (const video of videos) {
+        const part = await videoDataUriToGenerativePart(video);
+        if (part) newVideoParts.push(part);
+      }
+    }
 
     // Place image and video parts *before* the text part for the API call
     const userMessageParts = [
