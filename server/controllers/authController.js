@@ -220,6 +220,13 @@ exports.verifyEmailAndRegister = async (req, res) => {
         });
     }
 
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long.",
+      });
+    }
+
     let user = await User.findOne({ email, otpExpires: { $gt: Date.now() } });
     if (!user) {
       return res
