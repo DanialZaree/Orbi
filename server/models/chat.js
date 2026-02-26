@@ -33,6 +33,10 @@ const messageSchema = new mongoose.Schema(
       enum: ["user", "assistant"],
     },
     content: [contentBlockSchema],
+    geminiParts: {
+      type: [mongoose.Schema.Types.Mixed],
+      required: false,
+    },
     timestamp: {
       type: Date,
       default: Date.now,

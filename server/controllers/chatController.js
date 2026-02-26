@@ -34,19 +34,22 @@ exports.sendMessage = async (req, res) => {
           .status(404)
           .json({ success: false, message: "Chat not found." });
       }
-      // Re-format database history for Gemini
-      formattedHistory = currentChat.messages.map((msg) => ({
+      // Re-format database history for Gemini with a context window
+      const historyToProcess = currentChat.messages.slice(-MAX_HISTORY_MESSAGES);
+      formattedHistory = historyToProcess.map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
-        parts: msg.content
-          .map((block) => {
-            if (block.type === "image" || block.type === "video") {
-              return dataUriToGenerativePart(block.value);
-            } else if (block.type === "file") {
-              return processFilePart(block.value, block.fileName);
-            }
-            return { text: block.value };
-          })
-          .filter((part) => part),
+        parts:
+          msg.geminiParts ||
+          msg.content
+            .map((block) => {
+              if (block.type === "image" || block.type === "video") {
+                return dataUriToGenerativePart(block.value);
+              } else if (block.type === "file") {
+                return processFilePart(block.value, block.fileName);
+              }
+              return { text: block.value };
+            })
+            .filter((part) => part),
       }));
     }
 
@@ -110,10 +113,15 @@ exports.sendMessage = async (req, res) => {
         }),
         { type: "text", value: message },
       ],
+      geminiParts: userMessageParts,
     };
 
     // Prepare the Assistant Message object
-    const assistantMessage = { role: "assistant", content: parsedContent };
+    const assistantMessage = {
+      role: "assistant",
+      content: parsedContent,
+      geminiParts: parsedContent.map((block) => ({ text: block.value })),
+    };
 
     let newChatData = null;
 
