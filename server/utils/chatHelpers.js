@@ -1,4 +1,8 @@
-// Helper to convert Base64 data URI to a Gemini Part object
+/**
+ * Helper to convert Base64 data URI to a Gemini Part object
+ * @param {string} dataUri
+ * @returns {object|null}
+ */
 function dataUriToGenerativePart(dataUri) {
   try {
     const match = dataUri.match(
@@ -14,7 +18,11 @@ function dataUriToGenerativePart(dataUri) {
   }
 }
 
-// Helper to check if a MIME type is text-based
+/**
+ * Helper to check if a MIME type is text-based
+ * @param {string} mimeType
+ * @returns {boolean}
+ */
 function isTextMime(mimeType) {
   return (
     mimeType.startsWith("text/") ||
@@ -27,7 +35,12 @@ function isTextMime(mimeType) {
   );
 }
 
-// Helper to process document/file parts (extract text if text-based, else return inlineData)
+/**
+ * Helper to process document/file parts (extract text if text-based, else return inlineData)
+ * @param {string} dataUri
+ * @param {string} fileName
+ * @returns {object|null}
+ */
 function processFilePart(dataUri, fileName = "unknown") {
   try {
     const match = dataUri.match(
@@ -52,7 +65,11 @@ function processFilePart(dataUri, fileName = "unknown") {
   }
 }
 
-// Helper to parse the AI's text response
+/**
+ * Helper to parse the AI's text response
+ * @param {string} responseText
+ * @returns {Array}
+ */
 function parseGeminiResponse(responseText) {
   const contentArray = [];
   const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;

@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleAIFileManager } = require("@google/generative-ai/server");
 const mongoose = require("mongoose");
 const Chat = require("../models/chat");
 const {
@@ -8,6 +9,7 @@ const {
 } = require("../utils/chatHelpers");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 exports.sendMessage = async (req, res) => {
@@ -56,9 +58,14 @@ exports.sendMessage = async (req, res) => {
       .map(dataUriToGenerativePart)
       .filter((part) => part);
 
-    const newVideoParts = (videos || [])
-      .map(dataUriToGenerativePart)
-      .filter((part) => part);
+    // Process videos sequentially because upload is async
+    const newVideoParts = [];
+    if (videos && videos.length > 0) {
+      for (const video of videos) {
+        const part = await videoDataUriToGenerativePart(video);
+        if (part) newVideoParts.push(part);
+      }
+    }
 
     const newDocumentParts = (documents || [])
       .map((doc) => processFilePart(doc.value, doc.name))
