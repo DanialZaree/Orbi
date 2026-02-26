@@ -8,13 +8,20 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 // Helper to convert Base64 data URI to a Gemini Part object
 function dataUriToGenerativePart(dataUri) {
   try {
-    const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
-    );
-    if (!match) {
-      throw new Error("Invalid data URI format");
+    if (!dataUri || typeof dataUri !== "string" || !dataUri.startsWith("data:")) {
+      return null;
     }
-    return { inlineData: { data: match[2], mimeType: match[1] } };
+    const commaIndex = dataUri.indexOf(",");
+    if (commaIndex === -1) return null;
+
+    const header = dataUri.substring(0, commaIndex);
+    const base64Index = header.lastIndexOf(";base64");
+    if (base64Index === -1) return null;
+
+    const mimeType = header.substring(5, base64Index);
+    const base64Data = dataUri.substring(commaIndex + 1);
+
+    return { inlineData: { data: base64Data, mimeType } };
   } catch (error) {
     console.error("Failed to parse data URI:", error.message);
     return null; // Return null to be filtered out
@@ -37,13 +44,18 @@ function isTextMime(mimeType) {
 // Helper to process document/file parts (extract text if text-based, else return inlineData)
 function processFilePart(dataUri, fileName = "unknown") {
   try {
-    const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
-    );
-    if (!match) return null;
+    if (!dataUri || typeof dataUri !== "string" || !dataUri.startsWith("data:")) {
+      return null;
+    }
+    const commaIndex = dataUri.indexOf(",");
+    if (commaIndex === -1) return null;
 
-    const mimeType = match[1];
-    const base64Data = match[2];
+    const header = dataUri.substring(0, commaIndex);
+    const base64Index = header.lastIndexOf(";base64");
+    if (base64Index === -1) return null;
+
+    const mimeType = header.substring(5, base64Index);
+    const base64Data = dataUri.substring(commaIndex + 1);
 
     if (isTextMime(mimeType)) {
       const textContent = Buffer.from(base64Data, "base64").toString("utf-8");
@@ -86,6 +98,8 @@ function parseGeminiResponse(responseText) {
   return contentArray;
 }
 
+const MAX_HISTORY_MESSAGES = 40;
+
 exports.sendMessage = async (req, res) => {
   try {
     // 1. Destructure skipUserSave from the request
@@ -108,19 +122,22 @@ exports.sendMessage = async (req, res) => {
           .status(404)
           .json({ success: false, message: "Chat not found." });
       }
-      // Re-format database history for Gemini
-      formattedHistory = currentChat.messages.map((msg) => ({
+      // Re-format database history for Gemini with a context window
+      const historyToProcess = currentChat.messages.slice(-MAX_HISTORY_MESSAGES);
+      formattedHistory = historyToProcess.map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
-        parts: msg.content
-          .map((block) => {
-            if (block.type === "image" || block.type === "video") {
-              return dataUriToGenerativePart(block.value);
-            } else if (block.type === "file") {
-              return processFilePart(block.value, block.fileName);
-            }
-            return { text: block.value };
-          })
-          .filter((part) => part),
+        parts:
+          msg.geminiParts ||
+          msg.content
+            .map((block) => {
+              if (block.type === "image" || block.type === "video") {
+                return dataUriToGenerativePart(block.value);
+              } else if (block.type === "file") {
+                return processFilePart(block.value, block.fileName);
+              }
+              return { text: block.value };
+            })
+            .filter((part) => part),
       }));
     }
 
@@ -179,10 +196,15 @@ exports.sendMessage = async (req, res) => {
         }),
         { type: "text", value: message },
       ],
+      geminiParts: userMessageParts,
     };
 
     // Prepare the Assistant Message object
-    const assistantMessage = { role: "assistant", content: parsedContent };
+    const assistantMessage = {
+      role: "assistant",
+      content: parsedContent,
+      geminiParts: parsedContent.map((block) => ({ text: block.value })),
+    };
 
     let newChatData = null;
 
