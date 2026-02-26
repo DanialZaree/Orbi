@@ -37,8 +37,7 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-  },
-  { _id: false },
+  }
 );
 
 // The main chat schema with the userId type corrected

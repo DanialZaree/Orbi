@@ -38,7 +38,7 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
         {messages &&
           messages.map((msg, index) => (
             <ChatBubble
-              key={index}
+              key={msg._id || index}
               message={msg}
               // 2. Determine if this is the last message
               isLastMessage={index === messages.length - 1}
