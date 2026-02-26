@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Bot,
   Copy,
@@ -35,7 +35,7 @@ const MARKDOWN_COMPONENTS = {
     }
     return <p className="my-3 first:mt-0 last:mb-0">{children}</p>;
   },
-  a: ({ node, ...props }) => (
+  a: ({ node: _node, ...props }) => (
     <a
       {...props}
       className="inline-flex items-center gap-1 text-blue-400 hover:underline"
@@ -43,8 +43,12 @@ const MARKDOWN_COMPONENTS = {
       {props.children} <LinkIcon size={12} />
     </a>
   ),
-  ul: ({ node, ...props }) => <ul {...props} className="my-3 list-none pl-0" />,
-  ol: ({ node, ...props }) => <ol {...props} className="my-3 list-none pl-0" />,
+  ul: ({ node: _node, ...props }) => (
+    <ul {...props} className="my-3 list-none pl-0" />
+  ),
+  ol: ({ node: _node, ...props }) => (
+    <ol {...props} className="my-3 list-none pl-0" />
+  ),
 };
 
 // --- Helper: Shiki Highlighter ---
@@ -143,16 +147,26 @@ function Typewriter({ text, speed = 10 }) {
   useEffect(() => {
     let i = 0;
     setDisplayedText(""); // Reset when text prop changes
+
+    // Calculate batch size to target ~30ms per update (approx 33fps)
+    // This reduces renders/parsing overhead while maintaining typing speed
+    const TARGET_INTERVAL = 30;
+    const charsPerBatch = Math.max(1, Math.floor(TARGET_INTERVAL / speed));
+    const intervalTime = speed * charsPerBatch;
+
     const timer = setInterval(() => {
       if (i < text.length) {
-        // FIX: Use slice instead of prev + charAt(i). 
+        i += charsPerBatch;
+        // Ensure we don't exceed length but show everything at the end
+        if (i > text.length) i = text.length;
+
+        // FIX: Use slice instead of prev + charAt(i).
         // This prevents state batching glitches that skip characters.
-        setDisplayedText(text.slice(0, i + 1));
-        i++;
+        setDisplayedText(text.slice(0, i));
       } else {
         clearInterval(timer);
       }
-    }, speed);
+    }, intervalTime);
 
     return () => clearInterval(timer);
   }, [text, speed]);
@@ -295,8 +309,8 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
                 className={`prose-sm prose prose-invert px-2 py-1`}
                 dir={isRtlText ? "rtl" : "ltr"}
               >
-                {!isUser && isLastMessage ? (
-                  // If it's the AI's last message, use the Typewriter effect
+                {!isUser && isLastMessage && message.animate ? (
+                  // If it's the AI's last message and it's new, use the Typewriter effect
                   <Typewriter text={block.value} speed={10} />
                 ) : (
                   // Otherwise, render static Markdown

@@ -132,6 +132,7 @@ export default function App() {
       const botMessage = {
         role: "assistant",
         content: response.data.response,
+        animate: true,
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -225,6 +226,7 @@ export default function App() {
         const botMessage = {
           role: "assistant",
           content: response.data.response,
+          animate: true,
         };
         setMessages((prevMessages) => [...prevMessages, botMessage]);
       } catch (error) {
@@ -237,6 +239,7 @@ export default function App() {
         const errorMessage = {
           role: "assistant",
           content: [{ type: "text", value: errorMessageText }],
+          animate: true,
         };
         setMessages((prevMessages) => [...prevMessages, errorMessage]);
       } finally {
