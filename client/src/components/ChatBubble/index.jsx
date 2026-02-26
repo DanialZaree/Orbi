@@ -295,8 +295,8 @@ export default function ChatBubble({ message, isLastMessage, onRegenerate }) {
                 className={`prose-sm prose prose-invert px-2 py-1`}
                 dir={isRtlText ? "rtl" : "ltr"}
               >
-                {!isUser && isLastMessage ? (
-                  // If it's the AI's last message, use the Typewriter effect
+                {!isUser && isLastMessage && message.animate ? (
+                  // If it's the AI's last message and it's new, use the Typewriter effect
                   <Typewriter text={block.value} speed={10} />
                 ) : (
                   // Otherwise, render static Markdown
