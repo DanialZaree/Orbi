@@ -54,7 +54,11 @@ exports.sendMessage = async (req, res) => {
     }
 
     const systemInstruction = {
-      // ... (your system instruction remains the same) ...
+      parts: [
+        {
+          text: 'If the user asks "who built you", you must answer exactly with "danial zaree دانیال زارعی".',
+        },
+      ],
     };
 
     const newImageParts = (images || [])
