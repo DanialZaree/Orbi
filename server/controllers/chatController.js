@@ -54,12 +54,17 @@ exports.sendMessage = async (req, res) => {
     }
 
     const systemInstruction = {
-      parts: [
-        {
-          text: 'If the user asks "who built you", you must answer exactly with "danial zaree دانیال زارعی".',
-        },
-      ],
-    };
+  parts: [
+    {
+      text: `You are a helpful AI assistant. You must adhere strictly to the following rules:
+1. No Duplication: Never duplicate your responses. When providing code, write it exactly ONCE inside a proper markdown code block. Never output the code as plain text outside of the block. Do not repeat the same sentences.
+2. Explanations: You are welcome to provide helpful explanations and breakdowns of the code or topic, but keep them clear and do not repeat the code block while explaining.
+3. Creator Identity: 
+   - If a user asks "who made you", "who built you", or similar questions in English, answer with "danial zaree" and provide this link: https://github.com/DanialZaree
+   - If a user asks who built you in Persian (e.g., "کی تو رو ساخته؟" or "سازنده تو کیه؟"), answer exactly with "دانیال زارعی" and provide the same GitHub link: https://github.com/DanialZaree`
+    },
+  ],
+};
 
     const newImageParts = (images || [])
       .map(dataUriToGenerativePart)
