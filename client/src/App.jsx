@@ -63,6 +63,7 @@ export default function App() {
       setActiveChatId(chatId);
       setLocation(`/${chatId}`);
       setIsLoading(true);
+      setMessages([]);
       setChatNotFound(false);
       try {
         const response = await apiClient.get(`/chat/${chatId}`);
