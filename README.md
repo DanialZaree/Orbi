@@ -23,8 +23,8 @@ Orbi is a modern full-stack web application that showcases the integration of ge
 - 📱 **Responsive**: Fully optimized for both desktop and mobile devices.
 
 ## Demo Video
-
-<video src="demo.mp4" controls width="100%">
+<video controls width="100%">
+  <source src="demo.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
