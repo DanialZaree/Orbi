@@ -24,11 +24,25 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // --- Auth Modal State ---
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalView, setAuthModalView] = useState("signUp"); // 'signIn', 'signUp', 'verifyOtp'
+
+  const openAuthModal = useCallback((initialView = "signUp") => {
+    setAuthModalView(initialView);
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    setIsAuthModalOpen(false);
+  }, []);
+
   const handleAuthSuccess = (token, userData) => {
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setAuthToken(token);
     setUser(userData);
+    setIsAuthModalOpen(false);
     window.location.href = "/"; // Refresh on successful auth
   };
 
@@ -158,6 +172,12 @@ export function AuthProvider({ children }) {
     emailLogin,
     requestOTP,
     verifyAndRegister,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    authModalView,
+    setAuthModalView,
+    openAuthModal,
+    closeAuthModal,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

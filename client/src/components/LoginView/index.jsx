@@ -7,10 +7,7 @@ import SignInForm from "../SignIn";
 import SignUpForm from "../SignUp";
 import OtpForm from "../Otp"; // Renamed from Otp to OtpForm for clarity
 
-export default function LoginView() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [view, setView] = useState("signIn"); // 'signIn', 'signUp', 'verifyOtp'
-
+export default function LoginView({ hideTriggerButton = false }) {
   // --- Form State ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +26,11 @@ export default function LoginView() {
     emailLogin, // Local login
     requestOTP,
     verifyAndRegister,
+    isAuthModalOpen,
+    openAuthModal,
+    closeAuthModal,
+    authModalView,
+    setAuthModalView,
   } = useAuth();
 
   const wrappedSetPassword = (value) => {
@@ -47,9 +49,11 @@ export default function LoginView() {
 
   // --- Modal Toggle ---
   const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-    // Reset all state on open/close
-    setView("signIn");
+    if (isAuthModalOpen) {
+      closeAuthModal();
+    } else {
+      openAuthModal(authToken ? "signIn" : "signUp");
+    }
     setEmail("");
     setPassword("");
     setConfirmPassword("");
@@ -59,7 +63,7 @@ export default function LoginView() {
 
   // --- View Switching ---
   const switchTo = (newView) => {
-    setView(newView);
+    setAuthModalView(newView);
     setLocalError(null);
     // Don't clear email/password when moving from signup to otp
     if (newView !== "verifyOtp") {
@@ -141,38 +145,40 @@ export default function LoginView() {
 
   return (
     <>
-      <div
-        onClick={toggleModal}
-        className={`justify flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 ${
-          authToken && user
-            ? "text-white/70 hover:text-white"
-            : "bg-blue-600 text-white hover:bg-blue-700"
-        }`}
-        aria-label="Open user menu"
-      >
-        {authToken && user ? (
-          <>
-            <img
-              src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
-              alt={user.name}
-              className="h-5 w-5 rounded-full"
-            />
-            <span className="truncate">{user.name}</span>
-          </>
-        ) : (
-          <>
-            <User size={20} />
-            <span className="truncate">Sign In</span>
-          </>
-        )}
-      </div>
+      {!hideTriggerButton && (
+        <div
+          onClick={toggleModal}
+          className={`justify flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 ${
+            authToken && user
+              ? "text-white/70 hover:text-white"
+              : "bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
+          }`}
+          aria-label="Open user menu"
+        >
+          {authToken && user ? (
+            <>
+              <img
+                src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                alt={user.name}
+                className="h-5 w-5 rounded-full"
+              />
+              <span className="truncate">{user.name}</span>
+            </>
+          ) : (
+            <>
+              <User size={20} />
+              <span className="truncate">Sign In / Sign Up</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* --- Modal --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-2 flex items-center justify-center backdrop-blur-sm">
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60">
           {authToken && user ? (
             <SettingsPanel user={user} logout={logout} onClose={toggleModal} />
-          ) : view === "signIn" ? (
+          ) : authModalView === "signIn" ? (
             // Pass all state and handlers as props
             <SignInForm
               toggleModal={toggleModal}
@@ -189,7 +195,7 @@ export default function LoginView() {
               localError={localError}
               switchTo={switchTo}
             />
-          ) : view === "signUp" ? (
+          ) : authModalView === "signUp" ? (
             // Pass all state and handlers as props
             <SignUpForm
               toggleModal={toggleModal}
@@ -211,7 +217,7 @@ export default function LoginView() {
               switchTo={switchTo}
             />
           ) : (
-            // view === 'verifyOtp'
+            // authModalView === 'verifyOtp'
             // Pass all state and handlers as props
             <OtpForm
               toggleModal={toggleModal}
@@ -221,7 +227,6 @@ export default function LoginView() {
               email={email}
               isLoading={isLoading}
               error={error}
-              _
               localError={localError}
               switchTo={switchTo}
               handleResendOtp={handleResendOtp}

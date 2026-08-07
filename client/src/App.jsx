@@ -269,6 +269,7 @@ export default function App() {
 
   return (
     <div className="bg-dark-bg relative flex h-full font-sans text-white">
+      <LoginView hideTriggerButton={true} />
       <Sidebar
         chatHistory={chatHistory}
         setChatHistory={setChatHistory}
@@ -305,7 +306,7 @@ export default function App() {
           <div className="w-full shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
-              disabled={!authToken || isLoading}
+              disabled={isLoading}
             />
           </div>
         </div>

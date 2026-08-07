@@ -1,8 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Mic, Plus, X, ArrowUp, File } from "lucide-react";
+import { Mic, Plus, X, ArrowUp, File, Lock } from "lucide-react";
+import { useAuth } from "../../context/AuthContext.jsx";
 
-// --- ADDED: Receive onSendMessage and disabled props from the parent component (App.jsx) ---
+// --- Receive onSendMessage and disabled props from App.jsx ---
 export default function ChatInput({ onSendMessage, disabled }) {
+  const { authToken, openAuthModal } = useAuth();
+  const isAuthenticated = !!authToken;
+
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
   const textareaRef = useRef(null);
@@ -60,22 +64,30 @@ export default function ChatInput({ onSendMessage, disabled }) {
 
   const handlePaste = useCallback(
     (e) => {
+      if (!isAuthenticated) {
+        openAuthModal("signUp");
+        return;
+      }
       if (e.clipboardData.files && e.clipboardData.files.length > 0) {
         e.preventDefault();
         handleFiles(e.clipboardData.files);
       }
     },
-    [handleFiles],
+    [handleFiles, isAuthenticated, openAuthModal],
   );
 
   const handleAddClick = useCallback(() => {
+    if (!isAuthenticated) {
+      openAuthModal("signUp");
+      return;
+    }
     if (fileinputref.current) {
       fileinputref.current.click();
     }
-  }, []);
+  }, [isAuthenticated, openAuthModal]);
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -91,34 +103,60 @@ export default function ChatInput({ onSendMessage, disabled }) {
     });
   }, []);
 
-  // --- ADDED: Function to handle form submission ---
   const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent the page from reloading
-    // Check if there is text or files to send, and if the input is not disabled
+    e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal("signUp");
+      return;
+    }
     if ((text.trim() || files.length > 0) && !disabled) {
-      // Call the onSendMessage function passed from App.jsx with the text and files
       onSendMessage({ text, files: files.map((fw) => fw.file) });
-      // Clear the inputs after sending
       setText("");
       setFiles([]);
     }
   };
 
   const isFileLimitReached = files.length >= maxFiles;
+  const isSendDisabled = isAuthenticated && (disabled || (!text.trim() && files.length === 0));
 
   return (
-<form
+    <form
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className="sticky bottom-0 mx-auto mt-auto w-full self-end py-4"
+      className="sticky bottom-0 mx-auto mt-auto w-full self-end py-3"
     >
+      {!isAuthenticated && (
+        <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between rounded-2xl border border-blue-500/30 bg-blue-950/40 px-4 py-2.5 backdrop-blur-md text-xs sm:text-sm text-blue-100 shadow-xl">
+          <div className="flex items-center gap-2">
+            <Lock className="h-4 w-4 text-blue-400 shrink-0" />
+            <span>Sign in or create an account to chat with Orbi AI</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => openAuthModal("signIn")}
+              className="rounded-lg px-2.5 py-1 text-xs font-medium text-white/90 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => openAuthModal("signUp")}
+              className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 transition-colors shadow-sm cursor-pointer"
+            >
+              Sign Up
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto flex max-w-3xl flex-row items-end gap-2 px-2 sm:px-4">
-        
         <button
           type="button"
           onClick={handleAddClick}
-          disabled={isFileLimitReached}
-          className="border-border-color bg-dark-secondary-bg mb-1 flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 text-white/70 transition-colors hover:bg-dark-third-bg hover:text-white"
+          disabled={isAuthenticated && isFileLimitReached}
+          title={!isAuthenticated ? "Sign up to attach files" : "Add file"}
+          className="border-border-color bg-dark-secondary-bg mb-1 flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 text-white/70 transition-colors hover:bg-dark-third-bg hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Add file"
         >
           <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -180,7 +218,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
           <div className="flex w-full flex-row items-center gap-2 pb-1 pl-2 pr-1 pt-1">
             <textarea
               className="placeholder:text-secondary-text wrap-break-word max-h-40 w-full resize-none bg-transparent leading-6 text-white focus:outline-none"
-              placeholder="Ask Orbi..."
+              placeholder={isAuthenticated ? "Ask Orbi..." : "Ask Orbi... (Sign up to send)"}
               onChange={handleChange}
               value={text}
               ref={textareaRef}
@@ -198,12 +236,12 @@ export default function ChatInput({ onSendMessage, disabled }) {
             />
 
             <div className="flex shrink-0 items-center gap-3 pr-1">
-              
               <button
                 type="submit"
                 className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-600 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Send message"
-                disabled={disabled}
+                title={!isAuthenticated ? "Sign up to send message" : "Send message"}
+                disabled={isSendDisabled}
               >
                 <ArrowUp className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.5} />
               </button>
