@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -16,5 +17,6 @@ root.render(
         </AuthProvider>
       </GoogleOAuthProvider>
     </Router>
+    <SpeedInsights />
   </React.StrictMode>,
 );
