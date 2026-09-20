@@ -70,34 +70,79 @@ function processFilePart(dataUri, fileName = "unknown") {
 }
 
 /**
- * Helper to parse the AI's text response
+ * Helper to strip accidental repeating paragraphs (e.g. LLM looping intro text across multiple files)
+ * @param {string} text
+ * @returns {string}
+ */
+function cleanGeminiResponse(text) {
+  if (!text || typeof text !== "string") return "";
+
+  const paragraphs = text.split(/\n\n+/);
+  const seenParagraphs = new Map();
+  const cleanedParagraphs = [];
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i].trim();
+    // Check for large repeated narrative paragraphs (> 100 chars) that are not code blocks
+    if (p.length > 100 && !p.startsWith("```")) {
+      const count = seenParagraphs.get(p) || 0;
+      if (count >= 1) {
+        // Repeated identical block - skip duplicate
+        continue;
+      }
+      seenParagraphs.set(p, count + 1);
+    }
+    cleanedParagraphs.push(paragraphs[i]);
+  }
+
+  return cleanedParagraphs.join("\n\n");
+}
+
+/**
+ * Helper to parse the AI's text response into structured text and code blocks.
+ * Robust against multi-token language specifiers (e.g., ```typescript jsx) and unclosed trailing blocks.
  * @param {string} responseText
  * @returns {Array}
  */
 function parseGeminiResponse(responseText) {
+  if (!responseText || typeof responseText !== "string") return [];
+  const cleanedText = cleanGeminiResponse(responseText);
   const contentArray = [];
-  const codeBlockRegex = /```(\w*)[^\S\r\n]*\r?\n([\s\S]*?)```/g;
+
+  // Match any fenced code block: opening ``` followed by info string, body, and closing ``` or end of string
+  const codeBlockRegex = /```([^\r\n]*)\r?\n([\s\S]*?)(?:```|$)/g;
   let lastIndex = 0;
   let match;
-  while ((match = codeBlockRegex.exec(responseText)) !== null) {
+
+  while ((match = codeBlockRegex.exec(cleanedText)) !== null) {
     if (match.index > lastIndex) {
-      const textBlock = responseText.substring(lastIndex, match.index).trim();
+      const textBlock = cleanedText.substring(lastIndex, match.index).trim();
       if (textBlock) contentArray.push({ type: "text", value: textBlock });
     }
-    const codeBlock = match[2].trim();
-    if (codeBlock)
+
+    const rawLang = (match[1] || "").trim().split(/\s+/)[0] || "plaintext";
+    const codeBlock = match[2].replace(/\r?\n$/, "");
+    if (codeBlock || match[0].includes("```")) {
       contentArray.push({
         type: "code",
-        language: match[1] || "plaintext",
+        language: rawLang,
         value: codeBlock,
       });
+    }
+
     lastIndex = codeBlockRegex.lastIndex;
+    if (match.index === codeBlockRegex.lastIndex) {
+      codeBlockRegex.lastIndex++;
+    }
   }
-  if (lastIndex < responseText.length) {
-    const finalTextBlock = responseText.substring(lastIndex).trim();
-    if (finalTextBlock)
+
+  if (lastIndex < cleanedText.length) {
+    const finalTextBlock = cleanedText.substring(lastIndex).trim();
+    if (finalTextBlock) {
       contentArray.push({ type: "text", value: finalTextBlock });
+    }
   }
+
   return contentArray;
 }
 
@@ -106,5 +151,6 @@ module.exports = {
   dataUriToGenerativePart,
   isTextMime,
   processFilePart,
+  cleanGeminiResponse,
   parseGeminiResponse,
 };

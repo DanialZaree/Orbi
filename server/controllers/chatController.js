@@ -9,17 +9,26 @@ const {
 } = require("../utils/chatHelpers");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.5-flash",
+  generationConfig: {
+    temperature: 0.7,
+    topP: 0.95,
+  },
+});
 
 const SYSTEM_INSTRUCTION = {
   parts: [
     {
-      text: `You are a helpful AI assistant. You must adhere strictly to the following rules:
-1. No Duplication: Never duplicate your responses. When providing code, write it exactly ONCE inside a proper markdown code block. Never output the code as plain text outside of the block. Do not repeat the same sentences.
-2. Explanations: You are welcome to provide helpful explanations and breakdowns of the code or topic, but keep them clear and do not repeat the code block while explaining.
-3. Creator Identity: 
-   - If a user asks "who made you", "who built you", or similar questions in English, answer with "danial zaree" and provide this link: https://github.com/DanialZaree
-   - If a user asks who built you in Persian (e.g., "کی تو رو ساخته؟" or "سازنده تو کیه؟"), answer exactly with "دانیال زارعی" and provide the same GitHub link: https://github.com/DanialZaree`,
+      text: `You are Orbi, an expert, professional full-stack AI coding assistant and problem solver created by Danial Zaree.
+
+Instructions:
+1. Markdown Formatting: Always format your responses using clean, structured GitHub Flavored Markdown (proper headings, lists, tables, and bold highlights).
+2. Code Blocks: Format every code snippet or file in its own fenced code block with the appropriate language identifier (e.g., \`\`\`tsx, \`\`\`typescript, \`\`\`javascript, \`\`\`bash, \`\`\`html, \`\`\`css, \`\`\`json).
+3. Coherent Flow: Present explanations and files in a clean, logical sequence. Never repeat introductory text, greetings, or overview sections between files or steps. Provide concise, high-value explanations.
+4. Creator Identity:
+   - If asked "who made you", "who built you", or similar in English, state that you were created by Danial Zaree (https://github.com/DanialZaree).
+   - If asked in Persian (e.g., "کی تو رو ساخته؟", "سازنده تو کیه؟"), respond with "دانیال زارعی" (https://github.com/DanialZaree).`,
     },
   ],
 };
@@ -48,20 +57,55 @@ exports.sendMessage = async (req, res) => {
       }
 
       const historyToProcess = currentChat.messages.slice(-MAX_HISTORY_MESSAGES);
-      formattedHistory = historyToProcess.map((msg) => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: (msg.content || [])
-          .map((block) => {
-            if (block.type === "image" || block.type === "video") {
-              return dataUriToGenerativePart(block.value);
-            }
-            if (block.type === "file") {
-              return processFilePart(block.value, block.fileName);
-            }
-            return { text: block.value };
-          })
-          .filter(Boolean),
-      }));
+      formattedHistory = historyToProcess
+        .map((msg) => {
+          if (msg.role === "assistant") {
+            const assistantText = (msg.content || [])
+              .map((block) => {
+                if (block.type === "code") {
+                  return `\`\`\`${block.language || ""}\n${block.value}\n\`\`\``;
+                }
+                return block.value || "";
+              })
+              .filter(Boolean)
+              .join("\n\n");
+
+            if (!assistantText) return null;
+            return {
+              role: "model",
+              parts: [{ text: assistantText }],
+            };
+          }
+
+          const mediaParts = (msg.content || [])
+            .map((block) => {
+              if (block.type === "image" || block.type === "video") {
+                return dataUriToGenerativePart(block.value);
+              }
+              if (block.type === "file") {
+                return processFilePart(block.value, block.fileName);
+              }
+              return null;
+            })
+            .filter(Boolean);
+
+          const userText = (msg.content || [])
+            .filter((block) => block.type === "text" && block.value?.trim())
+            .map((block) => block.value.trim())
+            .join("\n\n");
+
+          const userParts = [
+            ...mediaParts,
+            ...(userText ? [{ text: userText }] : []),
+          ];
+
+          if (userParts.length === 0) return null;
+          return {
+            role: "user",
+            parts: userParts,
+          };
+        })
+        .filter(Boolean);
     }
 
     // Convert media to Gemini generative parts

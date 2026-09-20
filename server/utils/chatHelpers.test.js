@@ -130,4 +130,42 @@ describe('parseGeminiResponse', () => {
     assert.strictEqual(result[0].language, 'plaintext');
     assert.strictEqual(result[0].value, 'no language');
   });
+
+  test('should handle multi-token and special language tags like typescript jsx and c++', () => {
+    const text = 'Here is React code:\n```typescript jsx\nexport default function App() { return <div>Hello</div>; }\n```\nAnd C++:\n```c++\nint main() { return 0; }\n```';
+    const result = parseGeminiResponse(text);
+
+    assert.strictEqual(result.length, 4);
+    assert.strictEqual(result[0].type, 'text');
+    assert.strictEqual(result[0].value, 'Here is React code:');
+    assert.strictEqual(result[1].type, 'code');
+    assert.strictEqual(result[1].language, 'typescript');
+    assert.ok(result[1].value.includes('export default function App()'));
+    assert.strictEqual(result[2].type, 'text');
+    assert.strictEqual(result[2].value, 'And C++:');
+    assert.strictEqual(result[3].type, 'code');
+    assert.strictEqual(result[3].language, 'c++');
+  });
+
+  test('should handle unclosed code block without crashing', () => {
+    const text = 'Intro\n```javascript\nconst incomplete = true;';
+    const result = parseGeminiResponse(text);
+
+    assert.strictEqual(result.length, 2);
+    assert.strictEqual(result[0].type, 'text');
+    assert.strictEqual(result[0].value, 'Intro');
+    assert.strictEqual(result[1].type, 'code');
+    assert.strictEqual(result[1].language, 'javascript');
+    assert.ok(result[1].value.includes('const incomplete = true;'));
+  });
+
+  test('should deduplicate looping introductory paragraphs before subsequent files', () => {
+    const intro = 'I can help you create a **functional and complete Next.js application** that demonstrates common features like pages, components, data fetching, and routing.\n\nFor the purpose of this application, we will fetch posts from an API.';
+    const text = `${intro}\n\n### 1. File A\n\`\`\`bash\nnpm run dev\n\`\`\`\n\n${intro}\n\n### 2. File B\n\`\`\`javascript\nconst b = 2;\n\`\`\``;
+    const result = parseGeminiResponse(text);
+
+    // Should only have the intro once at the beginning, not repeated before File B
+    const introOccurrences = result.filter(b => b.type === 'text' && b.value.includes('functional and complete Next.js application'));
+    assert.strictEqual(introOccurrences.length, 1);
+  });
 });

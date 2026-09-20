@@ -18,6 +18,24 @@ import "katex/dist/katex.min.css";
 
 const isRTL = (text) => /[\u0600-\u06FF]/.test(text);
 
+const NORMALIZE_LANG_MAP = {
+  js: "javascript",
+  ts: "typescript",
+  py: "python",
+  sh: "bash",
+  shell: "bash",
+  zsh: "bash",
+  yml: "yaml",
+  md: "markdown",
+  react: "jsx",
+  node: "javascript",
+};
+
+const normalizeLanguage = (rawLang = "plaintext") => {
+  const clean = (rawLang || "").toLowerCase().trim().split(/[\s,]+/)[0];
+  return NORMALIZE_LANG_MAP[clean] || clean || "plaintext";
+};
+
 // Lazy Shiki Highlighter singleton
 const highlighterPromise = createHighlighter({
   themes: ["tokyo-night"],
@@ -40,7 +58,7 @@ const highlighterPromise = createHighlighter({
 const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang = "plaintext" }) {
   const [htmlBlock, setHtmlBlock] = useState("");
   const [isCopied, setIsCopied] = useState(false);
-  const normalizedLang = (lang || "plaintext").toLowerCase();
+  const normalizedLang = normalizeLanguage(lang);
 
   useEffect(() => {
     let isMounted = true;
@@ -145,7 +163,7 @@ const MARKDOWN_COMPONENTS = {
   ol: (props) => <ol {...props} className="my-2.5 list-none pl-0 space-y-1.5" />,
   li: (props) => <li {...props} className="relative leading-relaxed" />,
   code({ inline, className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || "");
+    const match = /language-([^\s]+)/.exec(className || "");
     const codeString = String(children || "").replace(/\n$/, "");
     if (!inline && (match || codeString.includes("\n"))) {
       return (
@@ -174,14 +192,20 @@ const MARKDOWN_COMPONENTS = {
   ),
 };
 
-// Stabilized typewriter: progressive text with cursor during generation, compiles Markdown on complete
+// Stabilized typewriter: instant rich markdown rendering for code/long responses, fast typewriter for short text
 const Typewriter = memo(function Typewriter({ text, speed = 10 }) {
-  const [displayedLength, setDisplayedLength] = useState(0);
+  const isRichOrLong = text.length > 250 || text.includes("```") || text.includes("\n#");
+  const [displayedLength, setDisplayedLength] = useState(isRichOrLong ? text.length : 0);
   const isFinished = displayedLength >= text.length;
 
   useEffect(() => {
+    if (isRichOrLong) {
+      setDisplayedLength(text.length);
+      return;
+    }
+
     setDisplayedLength(0);
-    const charsPerBatch = Math.max(1, Math.floor(25 / speed));
+    const charsPerBatch = Math.max(3, Math.ceil(text.length / 25));
     const timer = setInterval(() => {
       setDisplayedLength((prev) => {
         const next = prev + charsPerBatch;
@@ -191,14 +215,24 @@ const Typewriter = memo(function Typewriter({ text, speed = 10 }) {
         }
         return next;
       });
-    }, 25);
+    }, 20);
 
     return () => clearInterval(timer);
-  }, [text, speed]);
+  }, [text, speed, isRichOrLong]);
+
+  const handleSkip = () => {
+    if (!isFinished) {
+      setDisplayedLength(text.length);
+    }
+  };
 
   if (!isFinished) {
     return (
-      <div className="whitespace-pre-wrap leading-relaxed break-words font-sans min-h-[1.5em]">
+      <div
+        onClick={handleSkip}
+        className="cursor-pointer whitespace-pre-wrap leading-relaxed break-words font-sans min-h-[1.5em]"
+        title="Click to display full message"
+      >
         {text.slice(0, displayedLength)}
         <span className="inline-block h-4 w-1.5 animate-pulse bg-blue-500 ml-0.5 align-middle rounded-xs" />
       </div>
