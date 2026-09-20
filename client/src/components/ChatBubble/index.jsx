@@ -250,10 +250,10 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
       )}
 
       <div
-        className={`relative min-w-0 max-w-[95%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm sm:text-base break-words [overflow-wrap:anywhere] shadow-xs ${
+        className={`relative min-w-0 break-words [overflow-wrap:anywhere] ${
           isUser
-            ? "rounded-br-xs bg-blue-600/90 text-white"
-            : "bg-dark-secondary-bg border-border-color border text-gray-100"
+            ? "max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-br-xs bg-blue-700/55 px-4 py-3 text-sm sm:text-base text-white"
+            : "max-w-[95%] sm:max-w-[90%] px-1 py-1 text-sm sm:text-base text-gray-100"
         }`}
       >
         {message.content?.map((block, index) => {
@@ -354,7 +354,7 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
         })}
 
         {!isUser && (
-          <div className="mt-3 flex items-center justify-start gap-1.5 pt-1 text-secondary-text border-t border-white/5">
+          <div className="mt-2 flex items-center justify-start gap-1 text-secondary-text">
             <button
               onClick={handleCopyMessage}
               className="hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
@@ -362,9 +362,9 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
               aria-label="Copy message"
             >
               {isMessageCopied ? (
-                <Check size={15} className="text-green-400" />
+                <Check size={16} className="text-gray-500" />
               ) : (
-                <Copy size={15} />
+                <Copy size={16} />
               )}
             </button>
 
@@ -375,7 +375,7 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
                 title="Regenerate response"
                 aria-label="Regenerate response"
               >
-                <RotateCcw size={15} />
+                <RotateCcw size={16} />
               </button>
             )}
           </div>
