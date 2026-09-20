@@ -16,33 +16,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-// Helper: RTL Detection
 const isRTL = (text) => /[\u0600-\u06FF]/.test(text);
-
-// Markdown custom components
-const MARKDOWN_COMPONENTS = {
-  p: ({ node, children }) => {
-    if (
-      node.children?.[0]?.type === "element" &&
-      node.children[0]?.properties?.className?.includes("math-display")
-    ) {
-      return <div className="my-4 flex justify-center">{children}</div>;
-    }
-    return <p className="my-3 first:mt-0 last:mb-0">{children}</p>;
-  },
-  a: (props) => (
-    <a
-      {...props}
-      className="inline-flex items-center gap-1 text-blue-400 hover:underline"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {props.children} <LinkIcon size={12} />
-    </a>
-  ),
-  ul: (props) => <ul {...props} className="my-3 list-disc pl-5" />,
-  ol: (props) => <ol {...props} className="my-3 list-decimal pl-5" />,
-};
 
 // Lazy Shiki Highlighter singleton
 const highlighterPromise = createHighlighter({
@@ -58,24 +32,26 @@ const highlighterPromise = createHighlighter({
     "json",
     "markdown",
     "bash",
+    "sql",
   ],
 });
 
-// Memoized Shiki Code Block
-const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang }) {
+// Memoized Shiki Code Block with horizontal scroll and responsive layout
+const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang = "plaintext" }) {
   const [htmlBlock, setHtmlBlock] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const normalizedLang = (lang || "plaintext").toLowerCase();
 
   useEffect(() => {
     let isMounted = true;
     highlighterPromise
       .then(async (highlighter) => {
         try {
-          if (!highlighter.getLoadedLanguages().includes(lang)) {
-            await highlighter.loadLanguage(lang);
+          if (!highlighter.getLoadedLanguages().includes(normalizedLang)) {
+            await highlighter.loadLanguage(normalizedLang);
           }
           const html = highlighter.codeToHtml(code, {
-            lang,
+            lang: normalizedLang,
             theme: "tokyo-night",
           });
           if (isMounted) setHtmlBlock(html);
@@ -90,13 +66,13 @@ const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang }) {
         }
       })
       .catch(() => {
-        // Fallback for highlighting failure
+        // Fallback gracefully to preformatted text
       });
 
     return () => {
       isMounted = false;
     };
-  }, [code, lang]);
+  }, [code, normalizedLang]);
 
   const handleCopy = (e) => {
     e.stopPropagation();
@@ -109,34 +85,97 @@ const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang }) {
   return (
     <details
       open
-      className="border-border-color group relative my-4 w-full overflow-hidden rounded-lg border"
+      className="border-border-color group my-3.5 w-full max-w-full overflow-hidden rounded-xl border bg-[#1a1b26] shadow-md"
     >
-      <summary className="border-border-color flex items-center justify-between border-b bg-[#1a1b26] px-3 py-1.5 cursor-pointer">
+      <summary className="border-border-color flex items-center justify-between border-b bg-[#14151f] px-3.5 py-2 select-none cursor-pointer">
         <div className="flex items-center gap-2">
-          <span className="text-secondary-text text-sm tracking-wide uppercase">
-            {lang}
+          <span className="text-secondary-text text-xs font-mono font-semibold tracking-wider uppercase">
+            {normalizedLang}
           </span>
           <ChevronDown
-            size={20}
+            size={16}
             className="text-secondary-text transition-transform duration-200 group-open:rotate-180 hover:text-white"
           />
         </div>
         <button
           type="button"
           onClick={handleCopy}
-          className="text-secondary-text hover:bg-dark-third-bg flex cursor-pointer items-center gap-1.5 rounded-xl p-2 text-sm transition hover:text-white"
+          className="text-secondary-text hover:bg-white/10 flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition hover:text-white"
+          aria-label="Copy code to clipboard"
         >
-          {isCopied ? <Check size={16} /> : <Copy size={16} />}
+          {isCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
           {isCopied ? "Copied!" : "Copy"}
         </button>
       </summary>
-      <div dangerouslySetInnerHTML={{ __html: htmlBlock }} />
+      <div className="relative max-w-full overflow-x-auto p-3.5 text-xs sm:text-sm font-mono leading-relaxed">
+        {htmlBlock ? (
+          <div dangerouslySetInnerHTML={{ __html: htmlBlock }} />
+        ) : (
+          <pre className="whitespace-pre overflow-x-auto text-gray-300">
+            <code>{code}</code>
+          </pre>
+        )}
+      </div>
     </details>
   );
 });
 
-// Highly optimized typewriter: renders plain text during animation, switches to full AST Markdown when finished
-const Typewriter = memo(function Typewriter({ text, speed = 12 }) {
+// Markdown custom components mapping
+const MARKDOWN_COMPONENTS = {
+  p: ({ node, children }) => {
+    if (
+      node.children?.[0]?.type === "element" &&
+      node.children[0]?.properties?.className?.includes("math-display")
+    ) {
+      return <div className="my-4 flex justify-center overflow-x-auto py-1">{children}</div>;
+    }
+    return <p className="my-2.5 first:mt-0 last:mb-0 leading-relaxed break-words">{children}</p>;
+  },
+  a: (props) => (
+    <a
+      {...props}
+      className="inline-flex items-center gap-1 text-blue-400 underline underline-offset-2 hover:text-blue-300 break-all"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {props.children} <LinkIcon size={12} className="inline-block shrink-0" />
+    </a>
+  ),
+  ul: (props) => <ul {...props} className="my-2.5 list-none pl-0 space-y-1.5" />,
+  ol: (props) => <ol {...props} className="my-2.5 list-none pl-0 space-y-1.5" />,
+  li: (props) => <li {...props} className="relative leading-relaxed" />,
+  code({ inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || "");
+    const codeString = String(children || "").replace(/\n$/, "");
+    if (!inline && (match || codeString.includes("\n"))) {
+      return (
+        <ShikiCodeBlock
+          code={codeString}
+          lang={match ? match[1] : "plaintext"}
+        />
+      );
+    }
+    return (
+      <code
+        className="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-xs font-medium text-blue-300 break-words"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+  pre({ children }) {
+    return <div className="my-2.5 max-w-full overflow-hidden">{children}</div>;
+  },
+  table: (props) => (
+    <div className="border-border-color my-4 max-w-full overflow-x-auto rounded-lg border">
+      <table {...props} className="min-w-full divide-y divide-border-color text-left text-sm" />
+    </div>
+  ),
+};
+
+// Stabilized typewriter: progressive text with cursor during generation, compiles Markdown on complete
+const Typewriter = memo(function Typewriter({ text, speed = 10 }) {
   const [displayedLength, setDisplayedLength] = useState(0);
   const isFinished = displayedLength >= text.length;
 
@@ -159,9 +198,9 @@ const Typewriter = memo(function Typewriter({ text, speed = 12 }) {
 
   if (!isFinished) {
     return (
-      <div className="whitespace-pre-wrap leading-relaxed">
+      <div className="whitespace-pre-wrap leading-relaxed break-words font-sans min-h-[1.5em]">
         {text.slice(0, displayedLength)}
-        <span className="inline-block h-4 w-1.5 animate-pulse bg-blue-500 ml-0.5 align-middle" />
+        <span className="inline-block h-4 w-1.5 animate-pulse bg-blue-500 ml-0.5 align-middle rounded-xs" />
       </div>
     );
   }
@@ -200,24 +239,27 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
 
   return (
     <div
-      className={`flex w-full items-start gap-4 overflow-hidden max-sm:gap-1 ${
+      className={`flex w-full items-start gap-3 md:gap-4 overflow-hidden py-1 ${
         isUser ? "justify-end" : "justify-start"
       }`}
     >
       {!isUser && (
-        <div className="bg-surface flex shrink-0 items-center justify-center rounded-full max-sm:hidden">
-          <img src={orbi} alt="Orbi Logo" className="mt-2 h-8 max-sm:h-6" />
+        <div className="bg-surface flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm mt-1 max-sm:hidden">
+          <img src={orbi} alt="Orbi Logo" className="h-6 w-6 object-contain" />
         </div>
       )}
+
       <div
-        className={`relative max-w-[95%] rounded-2xl px-3 py-2 wrap-break-word ${
-          isUser ? "rounded-br-xs bg-blue-700/55" : "bg-surface"
+        className={`relative min-w-0 max-w-[95%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm sm:text-base break-words [overflow-wrap:anywhere] shadow-xs ${
+          isUser
+            ? "rounded-br-xs bg-blue-600/90 text-white"
+            : "bg-dark-secondary-bg border-border-color border text-gray-100"
         }`}
       >
         {message.content?.map((block, index) => {
           const key = `${block.type}-${index}`;
 
-          // 1. Code Block
+          // Code Block
           if (block.type === "code") {
             return (
               <ShikiCodeBlock
@@ -228,7 +270,7 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
             );
           }
 
-          // 2. Video / Image Blocks
+          // Image & Video Blocks
           const isMediaVideo =
             block.type === "video" ||
             (block.type === "image" &&
@@ -236,54 +278,56 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
               block.value.startsWith("data:video/"));
 
           if (block.type === "video" || block.type === "image") {
-            if (isMediaVideo) {
-              return (
-                <video
-                  key={key}
-                  src={block.value}
-                  controls
-                  className="my-2 max-h-[450px] w-full max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              );
-            }
             return (
-              <img
-                key={key}
-                src={block.value}
-                alt="User uploaded content"
-                className="my-2 max-h-[450px] max-w-[600px] rounded-lg object-contain max-sm:max-w-full"
-              />
+              <div key={key} className="my-2 max-w-full overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                {isMediaVideo ? (
+                  <video
+                    src={block.value}
+                    controls
+                    playsInline
+                    className="max-h-[420px] w-full max-w-[560px] rounded-xl object-contain mx-auto"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img
+                    src={block.value}
+                    alt="User uploaded content"
+                    className="max-h-[420px] w-full max-w-[560px] rounded-xl object-contain mx-auto"
+                    loading="lazy"
+                  />
+                )}
+              </div>
             );
           }
 
-          // 3. Attached File Block
+          // File Block
           if (block.type === "file") {
             return (
               <div
                 key={key}
-                className="bg-dark-secondary-bg border-border-color my-2 flex max-w-xs items-center gap-3 rounded-lg border p-3"
+                className="bg-dark-third-bg border-border-color my-2 flex max-w-sm items-center gap-3 rounded-xl border p-3 shadow-xs"
               >
                 <div className="bg-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                  <File className="text-white" size={20} />
+                  <File className="text-blue-400" size={20} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">
+                  <p className="truncate text-xs sm:text-sm font-medium text-white">
                     {block.fileName || "Attached File"}
                   </p>
+                  <p className="text-[11px] text-secondary-text">Attached document</p>
                 </div>
               </div>
             );
           }
 
-          // 4. Text Block
+          // Text Block
           if (typeof block.value === "string" && block.value.trim() !== "") {
             const isRtlText = isRTL(block.value);
             return (
               <div
                 key={key}
-                className="prose-sm prose prose-invert px-2 py-1"
+                className="prose-sm prose prose-invert max-w-none [overflow-wrap:anywhere]"
                 dir={isRtlText ? "rtl" : "ltr"}
               >
                 {!isUser && isLastMessage && message.animate ? (
@@ -310,28 +354,28 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
         })}
 
         {!isUser && (
-          <div className="flex items-center justify-start gap-2 mt-2">
+          <div className="mt-3 flex items-center justify-start gap-1.5 pt-1 text-secondary-text border-t border-white/5">
             <button
               onClick={handleCopyMessage}
-              className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
-              title="Copy response"
-              aria-label="Copy response"
+              className="hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
+              title="Copy message"
+              aria-label="Copy message"
             >
               {isMessageCopied ? (
-                <Check size={16} className="text-green-400" />
+                <Check size={15} className="text-green-400" />
               ) : (
-                <Copy size={16} />
+                <Copy size={15} />
               )}
             </button>
 
             {onRegenerate && (
               <button
                 onClick={onRegenerate}
-                className="text-secondary-text hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
+                className="hover:bg-white/10 rounded-lg p-1.5 transition-colors hover:text-white cursor-pointer"
                 title="Regenerate response"
                 aria-label="Regenerate response"
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={15} />
               </button>
             )}
           </div>

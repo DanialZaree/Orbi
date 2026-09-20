@@ -1,10 +1,10 @@
 import { useRef, useState, useEffect, useCallback, memo } from "react";
-import { Plus, X, ArrowUp, File, Lock } from "lucide-react";
+import { Plus, X, ArrowUp, File, Lock, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const MAX_FILES = 4;
 
-function ChatInput({ onSendMessage, disabled }) {
+function ChatInput({ onSendMessage, disabled = false }) {
   const { authToken, openAuthModal } = useAuth();
   const isAuthenticated = !!authToken;
 
@@ -15,13 +15,19 @@ function ChatInput({ onSendMessage, disabled }) {
   const filesRef = useRef(files);
   filesRef.current = files;
 
-  // Auto-resize textarea
+  // Auto-resize textarea smoothly with content
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const nextHeight = Math.min(el.scrollHeight, 180);
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > 180 ? "auto" : "hidden";
+  }, []);
+
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
-    }
-  }, [text]);
+    adjustTextareaHeight();
+  }, [text, adjustTextareaHeight]);
 
   // Clean up object URLs on unmount
   useEffect(() => {
@@ -32,9 +38,9 @@ function ChatInput({ onSendMessage, disabled }) {
     };
   }, []);
 
-  const handleChange = useCallback((e) => {
+  const handleChange = (e) => {
     setText(e.target.value);
-  }, []);
+  };
 
   const handleFiles = useCallback((incomingFiles) => {
     const newFiles = Array.from(incomingFiles);
@@ -53,39 +59,34 @@ function ChatInput({ onSendMessage, disabled }) {
     });
   }, []);
 
-  const handleFileChange = useCallback(
-    (e) => {
-      if (e.target.files) {
-        handleFiles(e.target.files);
-      }
-      e.target.value = "";
-    },
-    [handleFiles],
-  );
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      handleFiles(e.target.files);
+    }
+    e.target.value = "";
+  };
 
-  const handlePaste = useCallback(
-    (e) => {
-      if (!isAuthenticated) {
-        openAuthModal("signUp");
-        return;
-      }
-      if (e.clipboardData?.files?.length > 0) {
-        e.preventDefault();
-        handleFiles(e.clipboardData.files);
-      }
-    },
-    [handleFiles, isAuthenticated, openAuthModal],
-  );
-
-  const handleAddClick = useCallback(() => {
+  const handlePaste = (e) => {
     if (!isAuthenticated) {
       openAuthModal("signUp");
       return;
     }
-    fileInputRef.current?.click();
-  }, [isAuthenticated, openAuthModal]);
+    if (e.clipboardData?.files?.length > 0) {
+      e.preventDefault();
+      handleFiles(e.clipboardData.files);
+    }
+  };
 
-  const handleRemoveFile = useCallback((indexToRemove) => {
+  const handleAddClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal("signUp");
+      return;
+    }
+    if (disabled) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveFile = (indexToRemove) => {
     setFiles((prevFiles) => {
       const fileToRemove = prevFiles[indexToRemove];
       if (fileToRemove?.preview) {
@@ -93,45 +94,52 @@ function ChatInput({ onSendMessage, disabled }) {
       }
       return prevFiles.filter((_, index) => index !== indexToRemove);
     });
-  }, []);
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!isAuthenticated) {
       openAuthModal("signUp");
       return;
     }
+    if (disabled) return;
+
     const trimmed = text.trim();
-    if ((trimmed || files.length > 0) && !disabled) {
+    if (trimmed || files.length > 0) {
       onSendMessage({ text: trimmed, files: files.map((fw) => fw.file) });
       setText("");
-      // Clean up previews after handing files off to sender
       files.forEach((fw) => {
         if (fw.preview) URL.revokeObjectURL(fw.preview);
       });
       setFiles([]);
+
+      // Reset textarea height to default 1 line
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
+      // Respect IME composition (e.g. Persian, Chinese, Japanese typing)
+      if (e.nativeEvent?.isComposing) return;
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit();
     }
   };
 
   const isFileLimitReached = files.length >= MAX_FILES;
   const isSendDisabled =
-    isAuthenticated && (disabled || (!text.trim() && files.length === 0));
+    disabled || !isAuthenticated || (!text.trim() && files.length === 0);
 
   return (
     <form
       onSubmit={handleSubmit}
-      onKeyDown={handleKeyDown}
-      className="sticky bottom-0 mx-auto mt-auto w-full self-end py-3"
+      className="sticky bottom-0 mx-auto mt-auto w-full self-end py-2 sm:py-3"
     >
       {!isAuthenticated && (
-        <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between rounded-2xl border border-blue-500/30 bg-blue-950/40 px-4 py-2.5 backdrop-blur-md text-xs sm:text-sm text-blue-100 shadow-xl">
+        <div className="mx-auto mb-2.5 flex max-w-3xl items-center justify-between rounded-xl border border-blue-500/30 bg-blue-950/50 px-3.5 py-2 backdrop-blur-md text-xs sm:text-sm text-blue-100 shadow-lg">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-blue-400 shrink-0" />
             <span>Sign in or create an account to chat with Orbi AI</span>
@@ -147,7 +155,7 @@ function ChatInput({ onSendMessage, disabled }) {
             <button
               type="button"
               onClick={() => openAuthModal("signUp")}
-              className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 transition-colors shadow-sm cursor-pointer"
+              className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 transition-colors shadow-xs cursor-pointer"
             >
               Sign Up
             </button>
@@ -156,27 +164,38 @@ function ChatInput({ onSendMessage, disabled }) {
       )}
 
       <div className="mx-auto flex max-w-3xl flex-row items-end gap-2 px-2 sm:px-4">
+        {/* Attachment Button */}
         <button
           type="button"
           onClick={handleAddClick}
-          disabled={isAuthenticated && isFileLimitReached}
-          title={!isAuthenticated ? "Sign up to attach files" : "Add file"}
-          className="border-border-color bg-dark-secondary-bg mb-1 flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 text-white/70 transition-colors hover:bg-dark-third-bg hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Add file"
+          disabled={disabled || (isAuthenticated && isFileLimitReached)}
+          title={
+            !isAuthenticated
+              ? "Sign up to attach files"
+              : isFileLimitReached
+              ? "File limit reached (max 4)"
+              : "Attach media or files"
+          }
+          className="border-border-color bg-dark-secondary-bg mb-1 flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border text-secondary-text shadow-xs transition-colors hover:bg-dark-third-bg hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Attach files"
         >
-          <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
+          <Plus className="h-5 w-5" />
         </button>
 
+        {/* Input & Preview Wrapper */}
         <div
           onPaste={handlePaste}
-          className="border-border-color bg-dark-secondary-bg flex min-h-12 w-full flex-col rounded-4xl border-2 px-2 py-1 pr-0"
+          className={`border-border-color bg-dark-secondary-bg flex min-h-[48px] w-full flex-col rounded-3xl border px-3 py-1.5 shadow-md transition-colors ${
+            disabled ? "opacity-75" : "focus-within:border-blue-500/60"
+          }`}
         >
+          {/* File Previews */}
           {files.length > 0 && (
-            <div className="flex flex-wrap gap-2 p-2">
+            <div className="flex flex-wrap gap-2 pb-2 pt-1">
               {files.map((fileWrapper, index) => (
                 <div
                   key={`${fileWrapper.file.name}-${index}`}
-                  className="group relative h-16 w-16 overflow-hidden rounded-lg"
+                  className="group relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-lg border border-border-color bg-dark-third-bg"
                 >
                   {fileWrapper.preview &&
                     fileWrapper.file.type.startsWith("image/") && (
@@ -196,9 +215,9 @@ function ChatInput({ onSendMessage, disabled }) {
                       />
                     )}
                   {!fileWrapper.preview && (
-                    <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-700 p-1">
-                      <File size={20} className="text-white/70" />
-                      <span className="mt-1 w-full truncate break-all px-1 text-center text-[10px] leading-tight text-white">
+                    <div className="flex h-full w-full flex-col items-center justify-center p-1">
+                      <File size={18} className="text-blue-400" />
+                      <span className="mt-1 w-full truncate px-1 text-center text-[9px] text-gray-200">
                         {fileWrapper.file.name}
                       </span>
                     </div>
@@ -206,28 +225,36 @@ function ChatInput({ onSendMessage, disabled }) {
                   <button
                     type="button"
                     onClick={() => handleRemoveFile(index)}
-                    className="absolute right-1 top-1 z-10 cursor-pointer rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                    disabled={disabled}
+                    className="absolute right-1 top-1 z-10 cursor-pointer rounded-full bg-black/70 p-1 text-white opacity-90 transition hover:bg-black"
                     aria-label="Remove file"
                   >
-                    <X size={14} />
+                    <X size={12} />
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="flex w-full flex-row items-center gap-2 pb-1 pl-2 pr-1 pt-1">
+          {/* Text Area and Send Action */}
+          <div className="flex w-full flex-row items-end gap-2">
             <textarea
-              className="placeholder:text-secondary-text wrap-break-word max-h-40 w-full resize-none bg-transparent leading-6 text-white focus:outline-none"
-              placeholder={
-                isAuthenticated ? "Ask Orbi..." : "Ask Orbi... (Sign up to send)"
-              }
-              onChange={handleChange}
-              value={text}
               ref={textareaRef}
               rows={1}
-              name="chat-input"
+              value={text}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              disabled={disabled}
+              placeholder={
+                disabled
+                  ? "Orbi is thinking..."
+                  : isAuthenticated
+                  ? "Ask Orbi anything... (Shift+Enter for new line)"
+                  : "Ask Orbi... (Sign in to chat)"
+              }
+              className="placeholder:text-secondary-text max-h-[180px] w-full resize-none bg-transparent py-2 text-sm leading-relaxed text-white focus:outline-none disabled:cursor-not-allowed"
               id="chat-input"
+              name="chat-input"
             />
 
             <input
@@ -236,21 +263,22 @@ function ChatInput({ onSendMessage, disabled }) {
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
             />
 
-            <div className="flex shrink-0 items-center gap-3 pr-1">
+            <div className="flex shrink-0 items-center pb-1">
               <button
                 type="submit"
-                className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-600 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Send message"
-                title={
-                  !isAuthenticated
-                    ? "Sign up to send message"
-                    : "Send message"
-                }
                 disabled={isSendDisabled}
+                className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:opacity-40"
+                aria-label="Send message"
+                title={disabled ? "Waiting for response" : "Send message (Enter)"}
               >
-                <ArrowUp className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.5} />
+                {disabled ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <ArrowUp className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                )}
               </button>
             </div>
           </div>

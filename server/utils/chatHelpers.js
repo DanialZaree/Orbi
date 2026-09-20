@@ -76,7 +76,7 @@ function processFilePart(dataUri, fileName = "unknown") {
  */
 function parseGeminiResponse(responseText) {
   const contentArray = [];
-  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+  const codeBlockRegex = /```(\w*)[^\S\r\n]*\r?\n([\s\S]*?)```/g;
   let lastIndex = 0;
   let match;
   while ((match = codeBlockRegex.exec(responseText)) !== null) {
