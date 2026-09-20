@@ -133,6 +133,10 @@ function ChatInput({ onSendMessage, disabled = false }) {
   const isSendDisabled =
     disabled || !isAuthenticated || (!text.trim() && files.length === 0);
 
+  const isMultiLine =
+    text.includes("\n") ||
+    (textareaRef.current && textareaRef.current.scrollHeight > 48);
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -163,7 +167,11 @@ function ChatInput({ onSendMessage, disabled = false }) {
         </div>
       )}
 
-      <div className="mx-auto flex max-w-3xl flex-row items-end gap-2 px-2 sm:px-4">
+      <div
+        className={`mx-auto flex max-w-3xl flex-row gap-2 px-2 sm:px-4 ${
+          isMultiLine ? "items-end" : "items-center"
+        }`}
+      >
         {/* Attachment Button */}
         <button
           type="button"
@@ -176,7 +184,9 @@ function ChatInput({ onSendMessage, disabled = false }) {
               ? "File limit reached (max 4)"
               : "Attach media or files"
           }
-          className="border-border-color bg-dark-secondary-bg mb-1 flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border text-secondary-text shadow-xs transition-colors hover:bg-dark-third-bg hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className={`border-border-color bg-dark-secondary-bg flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border text-secondary-text shadow-xs transition-colors hover:bg-dark-third-bg hover:text-white disabled:cursor-not-allowed disabled:opacity-40 ${
+            isMultiLine ? "mb-1" : ""
+          }`}
           aria-label="Attach files"
         >
           <Plus className="h-5 w-5" />
@@ -185,7 +195,7 @@ function ChatInput({ onSendMessage, disabled = false }) {
         {/* Input & Preview Wrapper */}
         <div
           onPaste={handlePaste}
-          className={`border-border-color bg-dark-secondary-bg flex min-h-[48px] w-full flex-col rounded-3xl border px-3 py-1.5 shadow-md transition-colors ${
+          className={`border-border-color bg-dark-secondary-bg flex min-h-[48px] w-full flex-col rounded-3xl border pl-3.5 sm:pl-4 pr-1.5 sm:pr-2 py-1 shadow-md transition-colors ${
             disabled ? "opacity-75" : "focus-within:border-blue-500/60"
           }`}
         >
@@ -237,7 +247,11 @@ function ChatInput({ onSendMessage, disabled = false }) {
           )}
 
           {/* Text Area and Send Action */}
-          <div className="flex w-full flex-row items-end gap-2">
+          <div
+            className={`flex w-full flex-row gap-2 ${
+              isMultiLine ? "items-end" : "items-center"
+            }`}
+          >
             <textarea
               ref={textareaRef}
               rows={1}
@@ -252,7 +266,7 @@ function ChatInput({ onSendMessage, disabled = false }) {
                   ? "Ask Orbi anything... (Shift+Enter for new line)"
                   : "Ask Orbi... (Sign in to chat)"
               }
-              className="placeholder:text-secondary-text max-h-[180px] w-full resize-none bg-transparent py-2 text-sm leading-relaxed text-white focus:outline-none disabled:cursor-not-allowed"
+              className="placeholder:text-secondary-text max-h-[180px] w-full resize-none bg-transparent py-2 text-sm leading-normal text-white focus:outline-none disabled:cursor-not-allowed"
               id="chat-input"
               name="chat-input"
             />
@@ -266,11 +280,15 @@ function ChatInput({ onSendMessage, disabled = false }) {
               accept="image/*,video/*,.pdf,.doc,.docx,.txt"
             />
 
-            <div className="flex shrink-0 items-center pb-1">
+            <div
+              className={`flex shrink-0 items-center justify-center ${
+                isMultiLine ? "pb-1" : ""
+              }`}
+            >
               <button
                 type="submit"
                 disabled={isSendDisabled}
-                className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:opacity-40"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-xs transition-all hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:opacity-40"
                 aria-label="Send message"
                 title={disabled ? "Waiting for response" : "Send message (Enter)"}
               >

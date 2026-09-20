@@ -97,9 +97,9 @@ function ChatWindow({ messages, isLoading, onRegenerate }) {
               playsInline
               className="h-9 w-9 rounded-full object-cover"
             />
-            <div className="flex items-center gap-1.5 rounded-full bg-dark-secondary-bg border border-border-color px-4 py-2 text-xs font-medium">
+            <div className="flex items-center gap-2 py-1 text-sm text-secondary-text">
               <span>Orbi is thinking</span>
-              <span className="flex gap-1">
+              <span className="flex items-center gap-1 pt-0.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "150ms" }} />
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "300ms" }} />
