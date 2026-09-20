@@ -1,4 +1,3 @@
-import { useAuth } from "../../context/AuthContext.jsx";
 import {
   User,
   ChevronRight,

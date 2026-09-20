@@ -1,17 +1,21 @@
+const MAX_HISTORY_MESSAGES = 20;
+
 /**
  * Helper to convert Base64 data URI to a Gemini Part object
+ * Supports images and videos
  * @param {string} dataUri
  * @returns {object|null}
  */
 function dataUriToGenerativePart(dataUri) {
+  if (!dataUri || typeof dataUri !== "string") return null;
   try {
     const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
+      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=\s]+)$/
     );
     if (!match) {
       throw new Error("Invalid data URI format");
     }
-    return { inlineData: { data: match[2], mimeType: match[1] } };
+    return { inlineData: { data: match[2].trim(), mimeType: match[1] } };
   } catch (error) {
     console.error("Failed to parse data URI:", error.message);
     return null; // Return null to be filtered out
@@ -98,6 +102,7 @@ function parseGeminiResponse(responseText) {
 }
 
 module.exports = {
+  MAX_HISTORY_MESSAGES,
   dataUriToGenerativePart,
   isTextMime,
   processFilePart,

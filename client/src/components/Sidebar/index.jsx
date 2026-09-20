@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import TopNav from "../TopNav";
 import { Link } from "wouter";
 import orbi from "../../assets/orbi.webp";
@@ -14,8 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 
-// --- ADDED: Receive props from App.jsx to handle routing ---
-export default function Sidebar({
+function Sidebar({
   onSelectChat,
   onNewChat,
   activeChatId,
@@ -25,18 +24,15 @@ export default function Sidebar({
   const [isSideOpen, setIsSideOpen] = useState(false);
   const [isButtonRendered, setIsButtonRendered] = useState(isSideOpen);
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- PROBLEM FIX: Renamed for clarity ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  // --- PROBLEM FIX: Added state for the Rename functionality ---
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [itemToRename, setItemToRename] = useState(null);
 
   const openHandle = () => {
-    setIsSideOpen(!isSideOpen);
+    setIsSideOpen((prev) => !prev);
   };
 
   const handleOptionsToggle = (e, index) => {
@@ -55,20 +51,17 @@ export default function Sidebar({
         setIsButtonRendered(false);
       }, 150);
     }
-    return () => {
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [isSideOpen]);
 
   const handleDeleteRequest = (chat) => {
     setItemToDelete(chat);
-    setIsModalOpen(true);
+    setIsDeleteModalOpen(true);
     setOpenMenuIndex(null);
   };
 
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
-
     try {
       await apiClient.delete(`/chat/${itemToDelete._id}`);
       setChatHistory((prevChats) =>
@@ -80,12 +73,16 @@ export default function Sidebar({
     } catch (error) {
       console.error("Failed to delete chat:", error);
     } finally {
-      setIsModalOpen(false);
+      setIsDeleteModalOpen(false);
       setItemToDelete(null);
     }
   };
-  const activeChat = chatHistory.find((chat) => chat._id === activeChatId);
-  const activeChatTitle = activeChat ? activeChat.title : null;
+
+  const activeChatTitle = useMemo(() => {
+    const activeChat = chatHistory.find((chat) => chat._id === activeChatId);
+    return activeChat ? activeChat.title : null;
+  }, [chatHistory, activeChatId]);
+
   const handleRenameRequest = (chat) => {
     setItemToRename(chat);
     setIsRenameModalOpen(true);
@@ -95,7 +92,7 @@ export default function Sidebar({
   const handleConfirmRename = async (newTitle) => {
     if (
       !itemToRename ||
-      newTitle.trim() === "" ||
+      !newTitle.trim() ||
       newTitle === itemToRename.title
     ) {
       setIsRenameModalOpen(false);
@@ -116,12 +113,17 @@ export default function Sidebar({
       setItemToRename(null);
     }
   };
+
   return (
     <>
-    <TopNav isSideOpen={isSideOpen} openHandle={openHandle} activeChatTitle={activeChatTitle}/>
+      <TopNav
+        isSideOpen={isSideOpen}
+        openHandle={openHandle}
+        activeChatTitle={activeChatTitle}
+      />
       <aside
         className={`bg-dark-secondary-bg border-border-color absolute z-20 flex h-full w-0 shrink-0 flex-col border-0 border-r transition-all duration-300 ease-in-out md:relative ${
-          isSideOpen ? "w-72 " : "border-r-0 md:w-18"
+          isSideOpen ? "w-72" : "border-r-0 md:w-18"
         }`}
       >
         <div className="border-border-color flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b">
@@ -153,7 +155,9 @@ export default function Sidebar({
           <nav className="p-4">
             <button
               onClick={onNewChat}
-              className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border p-2 text-sm transition-all duration-300 ease-in-out hover:text-white ${!isSideOpen ? "justify-start" : "justify-center"}`}
+              className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border p-2 text-sm transition-all duration-300 ease-in-out hover:text-white ${
+                !isSideOpen ? "justify-start" : "justify-center"
+              }`}
             >
               <Plus size={20} className="shrink-0" />
               <span
@@ -182,7 +186,7 @@ export default function Sidebar({
                       onClick={() => onSelectChat(chat._id)}
                       className={`group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
                         activeChatId === chat._id
-                          ? " bg-dark-third-bg text-white"
+                          ? "bg-dark-third-bg text-white"
                           : "text-secondary-text hover:bg-dark-third-bg hover:text-white"
                       }`}
                     >
@@ -210,16 +214,18 @@ export default function Sidebar({
           </nav>
         </div>
         <div
-          className={`border-border-color mt-auto flex shrink-0 justify-between gap-3 p-4 ${!isSideOpen ? "md:border-t" : "border-t"}`}
+          className={`border-border-color mt-auto flex shrink-0 justify-between gap-3 p-4 ${
+            !isSideOpen ? "md:border-t" : "border-t"
+          }`}
         >
           {isButtonRendered && (
             <div
               className={`text-secondary-text border-border-color hover:bg-dark-third-bg flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-lg border text-sm font-bold whitespace-nowrap transition-all duration-200 ease-in-out hover:text-white ${
                 isSideOpen ? "grow" : "grow-0 opacity-0"
               }`}
-              aria-label="Send Feedback"
             >
-              <LoginView />
+              {/* Render only the button in sidebar, not duplicate modal */}
+              <LoginView hideModal={true} />
             </div>
           )}
 
@@ -237,11 +243,11 @@ export default function Sidebar({
           </button>
         </div>
       </aside>
+
       <DeleteModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        chatName={itemToDelete?.title}
       />
       <RenameModal
         isOpen={isRenameModalOpen}
@@ -252,3 +258,5 @@ export default function Sidebar({
     </>
   );
 }
+
+export default memo(Sidebar);

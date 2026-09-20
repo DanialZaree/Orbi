@@ -2,16 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
-const rateLimit = require("express-rate-limit");
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message:
-    "Too many authentication requests from this IP, please try again after 15 minutes",
-});
+const { authLimiter } = require("../middleware/rateLimiter");
 
 router.use(authLimiter);
 

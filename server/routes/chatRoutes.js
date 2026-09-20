@@ -4,25 +4,20 @@ const chatController = require("../controllers/chatController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { apiLimiter } = require("../middleware/rateLimiter");
 
-// Apply rate limiter to all routes in this file
+// Apply rate limiter and authentication to all chat endpoints
 router.use(apiLimiter);
+router.use(authMiddleware);
 
-// Get specific chat
-router.get("/:id", authMiddleware, chatController.getChatById);
+// Chat collection routes
+router.get("/", chatController.getChatHistory);
+router.post("/", chatController.sendMessage);
 
-// Get chat history list
-router.get("/", authMiddleware, chatController.getChatHistory);
+// Message-level sub-routes (must precede generic /:id)
+router.delete("/:id/last", chatController.deleteLastMessage);
+router.patch("/:id/rename", chatController.renameChatById);
 
-// Send new message
-router.post("/", authMiddleware, chatController.sendMessage);
-
-// This deletes ONLY the last message (for regeneration)
-router.delete("/:id/last", authMiddleware, chatController.deleteLastMessage);
-
-// Delete entire chat
-router.delete("/:id", authMiddleware, chatController.deleteChatById);
-
-// Rename chat
-router.patch("/:id/rename", authMiddleware, chatController.renameChatById);
+// Single chat resource routes
+router.get("/:id", chatController.getChatById);
+router.delete("/:id", chatController.deleteChatById);
 
 module.exports = router;

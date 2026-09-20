@@ -1,24 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 import ChatBubble from "../ChatBubble";
 import { SpinnerCustom } from "../ui/spinner";
 import homeVideo from "../../assets/green.webm";
 
-// 1. Added onRegenerate to the props
-export default function ChatWindow({ messages, isLoading, onRegenerate }) {
+function ChatWindow({ messages, isLoading, onRegenerate }) {
   const messagesEndRef = useRef(null);
-  const chatContainerRef = useRef(null);
+  const timerRef = useRef(null);
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
+  useEffect(() => {
+    timerRef.current = setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "end",
       });
     }, 50);
-  };
 
-  useEffect(() => {
-    scrollToBottom();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [messages]);
 
   if (isLoading && (!messages || messages.length === 0)) {
@@ -30,25 +29,20 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
   }
 
   return (
-    <div
-      ref={chatContainerRef}
-      className="w-full flex-1 overflow-y-auto p-3 md:p-6 pt-12"
-    >
+    <div className="w-full flex-1 overflow-y-auto p-3 md:p-6 pt-12">
       <div className="mx-auto w-full space-y-6 md:max-w-2xl">
-        {messages &&
-          messages.map((msg, index) => (
+        {messages?.map((msg, index) => {
+          const isLast = index === messages.length - 1;
+          return (
             <ChatBubble
-              key={msg._id || index}
+              key={msg._id || `${msg.role}-${index}`}
               message={msg}
-              // 2. Determine if this is the last message
-              isLastMessage={index === messages.length - 1}
-              // 3. Pass the function ONLY to the last message
-              onRegenerate={
-                index === messages.length - 1 ? onRegenerate : undefined
-              }
+              isLastMessage={isLast}
+              onRegenerate={isLast ? onRegenerate : undefined}
             />
-          ))}
-        {isLoading && messages && messages.length > 0 && (
+          );
+        })}
+        {isLoading && messages?.length > 0 && (
           <div className="text-secondary-text flex items-center text-left">
             <video
               src={homeVideo}
@@ -57,8 +51,8 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
               loop
               muted
               playsInline
-            ></video>
-            <span className="animate-pulse"> ORBI is typing...</span>
+            />
+            <span className="animate-pulse ml-2">Orbi is thinking...</span>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -66,3 +60,5 @@ export default function ChatWindow({ messages, isLoading, onRegenerate }) {
     </div>
   );
 }
+
+export default memo(ChatWindow);

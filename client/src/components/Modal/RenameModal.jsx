@@ -8,33 +8,31 @@ export default function RenameModal({
 }) {
   const [newName, setNewName] = useState("");
 
-  // When the modal opens, pre-fill the input with the current chat name
   useEffect(() => {
     if (isOpen) {
-      setNewName(currentName);
+      setNewName(currentName || "");
     }
   }, [isOpen, currentName]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   const handleConfirm = () => {
     if (newName && newName.trim()) {
-      onConfirm(newName);
+      onConfirm(newName.trim());
     }
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       handleConfirm();
+    } else if (e.key === "Escape") {
+      onClose();
     }
   };
+
   return (
     <div
-      className={
-        "bg-background/10 absolute inset-0 z-[2] flex items-center justify-center backdrop-blur-sm"
-      }
+      className="bg-background/10 absolute inset-0 z-[2] flex items-center justify-center backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -51,14 +49,14 @@ export default function RenameModal({
           name="chat-name"
           placeholder="Enter new chat name..."
           type="text"
-          value={newName} // Use the 'newName' state variable
-          onChange={(e) => setNewName(e.target.value)} // Update the 'newName' state
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
           autoFocus
           onKeyDown={handleKeyDown}
         />
         <div className="flex justify-center gap-4">
           <button
-            onClick={onclose}
+            onClick={onClose}
             className="border-border-color text-secondary-text hover:bg-dark-third-bg flex-1 cursor-pointer rounded-xl border px-4 py-2 font-medium hover:text-white"
           >
             Cancel

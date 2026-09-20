@@ -2,28 +2,26 @@ import { useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import SettingsPanel from "../SettingPanel";
 import { useGoogleLogin } from "@react-oauth/google";
-import { User, X, Eye, EyeOff, Lock, Mail, ArrowLeft } from "lucide-react";
+import { User } from "lucide-react";
 import SignInForm from "../SignIn";
 import SignUpForm from "../SignUp";
-import OtpForm from "../Otp"; // Renamed from Otp to OtpForm for clarity
+import OtpForm from "../Otp";
 
-export default function LoginView({ hideTriggerButton = false }) {
-  // --- Form State ---
+export default function LoginView({ hideTriggerButton = false, hideModal = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [localError, setLocalError] = useState(null);
 
-  // --- Auth Context ---
   const {
     authToken,
-    login, // Google login
+    login,
     logout,
     isLoading,
-    error, // Server error
+    error,
     user,
-    emailLogin, // Local login
+    emailLogin,
     requestOTP,
     verifyAndRegister,
     isAuthModalOpen,
@@ -33,27 +31,7 @@ export default function LoginView({ hideTriggerButton = false }) {
     setAuthModalView,
   } = useAuth();
 
-  const wrappedSetPassword = (value) => {
-    setPassword(value);
-    if (localError === "Passwords do not match.") {
-      setLocalError(null); // Clear the error on password change
-    }
-  };
-
-  const wrappedSetConfirmPassword = (value) => {
-    setConfirmPassword(value);
-    if (localError === "Passwords do not match.") {
-      setLocalError(null); // Clear the error on confirm password change
-    }
-  };
-
-  // --- Modal Toggle ---
-  const toggleModal = () => {
-    if (isAuthModalOpen) {
-      closeAuthModal();
-    } else {
-      openAuthModal(authToken ? "signIn" : "signUp");
-    }
+  const resetForm = () => {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
@@ -61,32 +39,36 @@ export default function LoginView({ hideTriggerButton = false }) {
     setLocalError(null);
   };
 
-  // --- View Switching ---
+  const toggleModal = () => {
+    if (isAuthModalOpen) {
+      closeAuthModal();
+    } else {
+      openAuthModal(authToken ? "signIn" : "signUp");
+    }
+    resetForm();
+  };
+
   const switchTo = (newView) => {
     setAuthModalView(newView);
     setLocalError(null);
-    // Don't clear email/password when moving from signup to otp
     if (newView !== "verifyOtp") {
       setPassword("");
       setConfirmPassword("");
     }
   };
 
-  // --- Google Login Handler ---
   const googleLoginHandler = useGoogleLogin({
     flow: "auth-code",
     onSuccess: (codeResponse) => login(codeResponse.code),
-    onError: () => setLocalError("Google Login Failed. Please try again."),
+    onError: () => setLocalError("Google login failed. Please try again."),
   });
 
-  // --- Password Visibility Toggles ---
   const [showPassword, setShowPassword] = useState(false);
-  const toggleShowPassword = () => setShowPassword(!showPassword);
+  const toggleShowPassword = () => setShowPassword((prev) => !prev);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const toggleShowConfirmPassword = () =>
-    setShowConfirmPassword(!showConfirmPassword);
+    setShowConfirmPassword((prev) => !prev);
 
-  // --- Handlers ---
   const handleSignIn = async (e) => {
     e.preventDefault();
     setLocalError(null);
@@ -94,7 +76,6 @@ export default function LoginView({ hideTriggerButton = false }) {
       setLocalError("Please enter both email and password.");
       return;
     }
-    // This now calls the function from useAuth
     await emailLogin(email, password);
   };
 
@@ -106,24 +87,20 @@ export default function LoginView({ hideTriggerButton = false }) {
       return;
     }
     try {
-      // This now calls the function from useAuth
       const response = await requestOTP(email);
       if (response && response.success) {
-        setView("verifyOtp"); // Move to next step
+        switchTo("verifyOtp"); // FIX: replaced undefined setView with switchTo
       }
     } catch (authError) {
       console.error("OTP Request Failed:", authError);
     }
   };
 
-  // This is a new handler just for resending the OTP
   const handleResendOtp = async () => {
     setLocalError(null);
-    setOtp(""); // Clear old OTP
+    setOtp("");
     try {
       await requestOTP(email);
-      // Optionally show a success message:
-      // setLocalError("A new code has been sent.");
     } catch (authError) {
       console.error("OTP Resend Failed:", authError);
     }
@@ -133,22 +110,19 @@ export default function LoginView({ hideTriggerButton = false }) {
     e.preventDefault();
     setLocalError(null);
     if (!otp || otp.length < 4) {
-      // Or whatever your OTP length is
       setLocalError("Please enter the complete verification code.");
       return;
     }
-    // This now calls the function from useAuth
     await verifyAndRegister(email, password, otp);
   };
-
-  // --- MAIN RENDER ---
 
   return (
     <>
       {!hideTriggerButton && (
-        <div
+        <button
+          type="button"
           onClick={toggleModal}
-          className={`justify flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 ${
+          className={`flex w-full cursor-pointer items-center gap-1.5 border-white/30 px-3 py-2 text-left ${
             authToken && user
               ? "text-white/70 hover:text-white"
               : "bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
@@ -158,28 +132,30 @@ export default function LoginView({ hideTriggerButton = false }) {
           {authToken && user ? (
             <>
               <img
-                src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
-                alt={user.name}
-                className="h-5 w-5 rounded-full"
+                src={
+                  user.picture ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`
+                }
+                alt={user.name || "User"}
+                className="h-5 w-5 rounded-full object-cover"
               />
-              <span className="truncate">{user.name}</span>
+              <span className="truncate">{user.name || "Profile"}</span>
             </>
           ) : (
             <>
               <User size={20} />
-              <span className="truncate">Sign In / Sign Up</span>
+              <span className="truncate font-medium">Sign In / Sign Up</span>
             </>
           )}
-        </div>
+        </button>
       )}
 
-      {/* --- Modal --- */}
-      {isAuthModalOpen && (
+      {/* Render modal only if not disabled via hideModal */}
+      {!hideModal && isAuthModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60">
           {authToken && user ? (
             <SettingsPanel user={user} logout={logout} onClose={toggleModal} />
           ) : authModalView === "signIn" ? (
-            // Pass all state and handlers as props
             <SignInForm
               toggleModal={toggleModal}
               googleLoginHandler={googleLoginHandler}
@@ -196,7 +172,6 @@ export default function LoginView({ hideTriggerButton = false }) {
               switchTo={switchTo}
             />
           ) : authModalView === "signUp" ? (
-            // Pass all state and handlers as props
             <SignUpForm
               toggleModal={toggleModal}
               googleLoginHandler={googleLoginHandler}
@@ -204,9 +179,9 @@ export default function LoginView({ hideTriggerButton = false }) {
               email={email}
               setEmail={setEmail}
               password={password}
-              setPassword={wrappedSetPassword}
+              setPassword={setPassword}
               confirmPassword={confirmPassword}
-              setConfirmPassword={wrappedSetConfirmPassword}
+              setConfirmPassword={setConfirmPassword}
               showPassword={showPassword}
               toggleShowPassword={toggleShowPassword}
               showConfirmPassword={showConfirmPassword}
@@ -217,8 +192,6 @@ export default function LoginView({ hideTriggerButton = false }) {
               switchTo={switchTo}
             />
           ) : (
-            // authModalView === 'verifyOtp'
-            // Pass all state and handlers as props
             <OtpForm
               toggleModal={toggleModal}
               handleVerifyOtp={handleVerifyOtp}

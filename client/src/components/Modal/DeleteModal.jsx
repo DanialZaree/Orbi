@@ -1,5 +1,6 @@
-export default function DeleteModal({ isOpen, onClose, onConfirm, children }) {
+export default function DeleteModal({ isOpen, onClose, onConfirm }) {
   if (!isOpen) return null;
+
   return (
     <div
       className="bg-background/10 absolute inset-0 z-[2] flex items-center justify-center backdrop-blur-sm"
