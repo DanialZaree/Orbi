@@ -9,13 +9,35 @@ const {
 } = require("../utils/chatHelpers");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
-  generationConfig: {
-    temperature: 0.7,
-    topP: 0.95,
+
+const GENERATION_CONFIG = {
+  temperature: 0.7,
+  topP: 0.95,
+};
+
+const AI_MODELS = [
+  {
+    name: "gemini-3.5-flash-lite",
+    instance: genAI.getGenerativeModel({
+      model: "gemini-3.5-flash-lite",
+      generationConfig: GENERATION_CONFIG,
+    }),
   },
-});
+  {
+    name: "gemini-3.1-flash-lite",
+    instance: genAI.getGenerativeModel({
+      model: "gemini-3.1-flash-lite",
+      generationConfig: GENERATION_CONFIG,
+    }),
+  },
+  {
+    name: "gemini-2.5-flash",
+    instance: genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: GENERATION_CONFIG,
+    }),
+  },
+];
 
 const SYSTEM_INSTRUCTION = {
   parts: [
@@ -125,17 +147,36 @@ exports.sendMessage = async (req, res) => {
       { role: "user", parts: userMessageParts },
     ];
 
-    // Call Gemini API with timeout protection
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("AI_TIMEOUT")), 45000)
-    );
+    // Call Gemini API across models with fallback (3.5 Flash Lite -> 3.1 Flash Lite -> 2.5 Flash)
+    let result = null;
+    let lastError = null;
 
-    const geminiPromise = model.generateContent({
-      contents,
-      systemInstruction: SYSTEM_INSTRUCTION,
-    });
+    for (const { name, instance } of AI_MODELS) {
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("AI_TIMEOUT")), 45000)
+        );
+        result = await Promise.race([
+          instance.generateContent({
+            contents,
+            systemInstruction: SYSTEM_INSTRUCTION,
+          }),
+          timeoutPromise,
+        ]);
+        if (result) break;
+      } catch (err) {
+        lastError = err;
+        console.warn(
+          `Model ${name} hit an error or quota, attempting fallback:`,
+          err?.message,
+        );
+      }
+    }
 
-    const result = await Promise.race([geminiPromise, timeoutPromise]);
+    if (!result) {
+      throw lastError || new Error("All AI models failed to respond.");
+    }
+
     const response = await result.response;
     const responseText = response.text();
     const parsedContent = parseGeminiResponse(responseText);

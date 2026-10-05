@@ -9,6 +9,9 @@ import Welcome from "./components/Welcome";
 import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
 import NotFound from "./components/NotFound";
+import LegalPage from "./components/Legal";
+
+const RESERVED_PATHS = ["privacy"];
 
 const generateId = () => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -34,8 +37,11 @@ function fileToDataUri(file) {
 
 export default function App() {
   const { authToken } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [match, params] = useRoute("/:chatId");
+
+  const isPrivacyRoute =
+    params?.chatId?.toLowerCase() === "privacy" || location === "/privacy";
 
   const [messages, setMessages] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -107,13 +113,22 @@ export default function App() {
 
   // Sync route param with activeChatId
   useEffect(() => {
-    if (match && params?.chatId) {
+    if (
+      match &&
+      params?.chatId &&
+      !RESERVED_PATHS.includes(params.chatId.toLowerCase())
+    ) {
       if (params.chatId !== activeChatId) {
         handleSelectChat(params.chatId);
       }
-    } else if (!match && activeChatId) {
-      setActiveChatId(null);
-      setMessages([]);
+    } else if (
+      !match ||
+      (params?.chatId && RESERVED_PATHS.includes(params.chatId.toLowerCase()))
+    ) {
+      if (activeChatId) {
+        setActiveChatId(null);
+        setMessages([]);
+      }
     }
   }, [match, params?.chatId, activeChatId, handleSelectChat]);
 
@@ -294,21 +309,26 @@ export default function App() {
       {/* Root Modal Portal */}
       <LoginView hideTriggerButton={true} />
 
-      <Sidebar
-        chatHistory={chatHistory}
-        setChatHistory={setChatHistory}
-        activeChatId={activeChatId}
-        onSelectChat={(id) => {
-          setLocation(`/${id}`);
-          handleSelectChat(id);
-        }}
-        onNewChat={handleNewChat}
-      />
+      {!isPrivacyRoute && (
+        <Sidebar
+          chatHistory={chatHistory}
+          setChatHistory={setChatHistory}
+          activeChatId={activeChatId}
+          onSelectChat={(id) => {
+            setLocation(`/${id}`);
+            handleSelectChat(id);
+          }}
+          onNewChat={handleNewChat}
+        />
+      )}
 
       <main className="relative flex h-full w-full flex-1 flex-col font-sans">
         <div className="mx-auto flex w-full flex-1 flex-col items-center overflow-hidden">
-          <div className="chatwindow w-full flex-1 overflow-y-auto py-4">
+          <div className={`chatwindow w-full flex-1 overflow-y-auto ${isPrivacyRoute ? "p-0" : "py-4"}`}>
             <Switch>
+              <Route path="/privacy">
+                <LegalPage />
+              </Route>
               <Route path="/:chatId">
                 {chatNotFound ? (
                   <NotFound />
@@ -331,12 +351,14 @@ export default function App() {
             </Switch>
           </div>
 
-          <div className="w-full shrink-0">
-            <ChatInput
-              onSendMessage={handleSendMessage}
-              disabled={isLoading}
-            />
-          </div>
+          {!isPrivacyRoute && (
+            <div className="w-full shrink-0">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                disabled={isLoading}
+              />
+            </div>
+          )}
         </div>
       </main>
     </div>

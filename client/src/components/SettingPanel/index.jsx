@@ -1,3 +1,4 @@
+import { useLocation } from "wouter";
 import {
   User,
   ChevronRight,
@@ -10,35 +11,39 @@ import {
 } from "lucide-react";
 
 export default function SettingsPanel({ user, logout, onClose }) {
+  const [, setLocation] = useLocation();
+
+  const handleOpenPrivacy = () => {
+    onClose();
+    setLocation("/privacy");
+  };
+
   return (
-    <div className="border-border-color bg-dark-secondary-bg animate-fade-in flex w-full max-w-2xl flex-col rounded-2xl border">
-      <div className="border-border-color flex w-full flex-row items-center justify-between border-b p-2 px-5">
+    <div className="border-border-color bg-dark-secondary-bg animate-fade-in flex w-full max-w-2xl flex-col rounded-2xl border shadow-2xl">
+      <div className="border-border-color flex w-full flex-row items-center justify-between border-b p-3 px-5">
         <nav className="flex items-center">
           <div className="text-secondary-text flex items-center">
-            <span className="text-muted-foreground font-normal">Setting</span>
-            <ChevronRight size={18} className="mt-1" />
+            <span className="text-muted-foreground font-normal text-sm">Setting</span>
+            <ChevronRight size={16} className="mt-0.5 mx-1" />
           </div>
           <div className="flex items-center">
-            <span className="font-bold">
-              <h2 className="p-0 text-center font-medium text-white">
-                Profile
-              </h2>
-            </span>
+            <h2 className="p-0 text-sm font-semibold text-white">Profile</h2>
           </div>
         </nav>
         <button
           onClick={onClose}
-          className="text-secondary-text cursor-pointer hover:text-white"
+          className="text-secondary-text cursor-pointer hover:text-white p-1 rounded-lg hover:bg-dark-third-bg transition-colors"
           aria-label="close settings panel"
         >
           <X size={18} />
         </button>
       </div>
+
       <div className="flex flex-row">
         <div className="border-border-color w-1/3 border-r p-5">
           <ul className="flex flex-1 flex-col gap-2 text-white">
             <li>
-              <button className="bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
+              <button className="bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left font-medium">
                 <User size={16} />
                 Profile
               </button>
@@ -63,13 +68,21 @@ export default function SettingsPanel({ user, logout, onClose }) {
               </button>
             </li>
             <li>
-              <button className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
+              <button
+                onClick={handleOpenPrivacy}
+                className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left text-secondary-text hover:text-white transition-colors"
+              >
                 <Lock size={16} />
                 Privacy
               </button>
             </li>
             <li>
-              <a href="https://github.com/danialzaree" className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left">
+              <a
+                href="https://github.com/danialzaree"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:bg-hover-bg/70 flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl px-3 py-2 text-left text-secondary-text hover:text-white transition-colors"
+              >
                 <Github size={16} />
                 Danial Zaree
               </a>
@@ -77,7 +90,7 @@ export default function SettingsPanel({ user, logout, onClose }) {
             <li className="mt-10">
               <button
                 onClick={logout}
-                className="box-border flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl border border-transparent bg-red-950/20 px-3 py-2 text-red-500 hover:border hover:border-red-500"
+                className="box-border flex w-full cursor-pointer flex-row items-center gap-3 rounded-xl border border-transparent bg-red-950/20 px-3 py-2 text-red-500 hover:border hover:border-red-500 transition-colors"
               >
                 <LogOut size={16} />
                 Log Out
@@ -85,22 +98,31 @@ export default function SettingsPanel({ user, logout, onClose }) {
             </li>
           </ul>
         </div>
+
         <div className="flex w-2/3 items-center justify-center p-5">
           {user ? (
             <div className="flex flex-col items-center gap-4 text-center">
-              {user.picture && (
+              {user.picture ? (
                 <img
-                  src={`https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                  src={user.picture}
                   alt="User Profile"
-                  className="h-24 w-24 rounded-full border-2 border-blue-500 object-cover"
+                  className="h-24 w-24 rounded-full border-2 border-blue-500 object-cover shadow-lg"
+                />
+              ) : (
+                <img
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`}
+                  alt="User Profile"
+                  className="h-24 w-24 rounded-full border-2 border-blue-500 object-cover shadow-lg"
                 />
               )}
-              <h3 className="text-xl font-bold text-white">
-                {user.name || "User Name"}
-              </h3>
-              <p className="text-secondary-text text-sm">
-                {user.email || "user@example.com"}
-              </p>
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  {user.name || "User Name"}
+                </h3>
+                <p className="text-secondary-text text-sm mt-0.5">
+                  {user.email || "user@example.com"}
+                </p>
+              </div>
             </div>
           ) : (
             <p className="text-secondary-text">Loading profile...</p>

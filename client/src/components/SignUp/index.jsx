@@ -1,5 +1,6 @@
 import { FcGoogle } from "react-icons/fc";
 import { X, Eye, EyeOff } from "lucide-react";
+import { useLocation } from "wouter";
 
 // Accept all the props from LoginView
 const SignUpForm = ({
@@ -20,7 +21,10 @@ const SignUpForm = ({
   error,
   localError,
   switchTo,
-}) => (
+}) => {
+  const [, setLocation] = useLocation();
+
+  return (
   <div className="border-border-color bg-surface animate-fade-in bg-dark-secondary-bg relative w-full max-w-md rounded-2xl border p-8">
     <button
       onClick={toggleModal}
@@ -142,6 +146,21 @@ const SignUpForm = ({
       >
         {isLoading && email ? "Sending OTP..." : "Sign Up"}
       </button>
+
+      <p className="mt-3 text-center text-[11px] leading-relaxed text-secondary-text">
+        By creating an account, you agree to our{" "}
+        <button
+          type="button"
+          onClick={() => {
+            toggleModal();
+            setLocation("/privacy");
+          }}
+          className="text-blue-400 hover:underline cursor-pointer font-medium"
+        >
+          Privacy Policy
+        </button>
+        .
+      </p>
     </form>
 
     {/* --- Footer Link --- */}
@@ -157,6 +176,7 @@ const SignUpForm = ({
       </button>
     </div>
   </div>
-);
+  );
+};
 
 export default SignUpForm;
