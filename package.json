@@ -1,11 +1,20 @@
 {
-  "name": "my-project",
+  "name": "orbi",
   "version": "1.0.0",
+  "description": "Orbi - AI Conversational Assistant",
   "scripts": {
-    "format": "prettier --write .",
-    "start-server": "cd server && npm start",
-    "start-client": "cd client && npm run dev -- --host",
-    "dev": "concurrently \"npm run start-server\" \"npm run start-client\""
+    "dev": "concurrently \"npm run start-server\" \"npm run start-client\"",
+    "start-server": "cd server && npm run dev",
+    "start-client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "test": "npm run test:server && npm run test:client",
+    "test:server": "cd server && npm test",
+    "test:client": "cd client && npm test",
+    "lint": "cd client && npm run lint",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

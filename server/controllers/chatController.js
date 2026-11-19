@@ -17,23 +17,23 @@ const GENERATION_CONFIG = {
 
 const AI_MODELS = [
   {
-    name: "gemini-3.5-flash-lite",
-    instance: genAI.getGenerativeModel({
-      model: "gemini-3.5-flash-lite",
-      generationConfig: GENERATION_CONFIG,
-    }),
-  },
-  {
-    name: "gemini-3.1-flash-lite",
-    instance: genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite",
-      generationConfig: GENERATION_CONFIG,
-    }),
-  },
-  {
     name: "gemini-2.5-flash",
     instance: genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
+      generationConfig: GENERATION_CONFIG,
+    }),
+  },
+  {
+    name: "gemini-2.0-flash",
+    instance: genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: GENERATION_CONFIG,
+    }),
+  },
+  {
+    name: "gemini-1.5-flash",
+    instance: genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
       generationConfig: GENERATION_CONFIG,
     }),
   },
@@ -147,7 +147,7 @@ exports.sendMessage = async (req, res) => {
       { role: "user", parts: userMessageParts },
     ];
 
-    // Call Gemini API across models with fallback (3.5 Flash Lite -> 3.1 Flash Lite -> 2.5 Flash)
+    // Call Gemini API across models with fallback (2.5 Flash -> 2.0 Flash -> 1.5 Flash)
     let result = null;
     let lastError = null;
 

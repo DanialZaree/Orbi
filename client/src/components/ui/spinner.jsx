@@ -3,7 +3,7 @@ import { LoaderIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Remove the TypeScript type annotation from the function props
-function Spinner({ className, ...props }) {
+export function Spinner({ className, ...props }) {
   return (
     <LoaderIcon
       role="status"
@@ -21,3 +21,5 @@ export function SpinnerCustom() {
     </div>
   )
 }
+
+export default Spinner;

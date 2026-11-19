@@ -1,7 +1,15 @@
 {
+  "name": "orbi-server",
+  "version": "1.0.0",
+  "description": "Backend API for Orbi AI Chatbot",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first nodemon server.js"
+    "start": "node server.js",
+    "dev": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first nodemon server.js",
+    "test": "node --test utils/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
