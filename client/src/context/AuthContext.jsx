@@ -8,20 +8,58 @@ import {
 } from "react";
 import apiClient from "../services/api";
 
-const AuthContext = createContext(null);
-
-export function AuthProvider({ children }) {
-  const [authToken, setAuthToken] = useState(() =>
-    localStorage.getItem("authToken"),
-  );
-  const [user, setUser] = useState(() => {
+// Storage abstraction for session state
+const authStorage = {
+  getToken: () => {
+    try {
+      return localStorage.getItem("authToken");
+    } catch {
+      return null;
+    }
+  },
+  setToken: (token) => {
+    try {
+      localStorage.setItem("authToken", token);
+    } catch {
+      // Storage unavailable or disabled
+    }
+  },
+  removeToken: () => {
+    try {
+      localStorage.removeItem("authToken");
+    } catch {
+      // Storage unavailable or disabled
+    }
+  },
+  getUser: () => {
     try {
       const stored = localStorage.getItem("user");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
-  });
+  },
+  setUser: (userData) => {
+    try {
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch {
+      // Storage unavailable or disabled
+    }
+  },
+  removeUser: () => {
+    try {
+      localStorage.removeItem("user");
+    } catch {
+      // Storage unavailable or disabled
+    }
+  },
+};
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [authToken, setAuthToken] = useState(() => authStorage.getToken());
+  const [user, setUser] = useState(() => authStorage.getUser());
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,8 +80,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const handleAuthSuccess = useCallback((token, userData) => {
-    localStorage.setItem("authToken", token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    authStorage.setToken(token);
+    authStorage.setUser(userData);
     setAuthToken(token);
     setUser(userData);
     setIsAuthModalOpen(false);
@@ -53,13 +91,13 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setAuthToken(null);
     setUser(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
+    authStorage.removeToken();
+    authStorage.removeUser();
   }, []);
 
   // Validate session on mount
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = authStorage.getToken();
     if (!token) {
       setIsLoading(false);
       return;
@@ -71,7 +109,7 @@ export function AuthProvider({ children }) {
       .then((response) => {
         if (isMounted && response.data?.success) {
           setUser(response.data.user);
-          localStorage.setItem("user", JSON.stringify(response.data.user));
+          authStorage.setUser(response.data.user);
         }
       })
       .catch(() => {

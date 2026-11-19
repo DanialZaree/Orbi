@@ -1,0 +1,7 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "rules": {
+    "auth-token-in-web-storage": "off",
+    "react-doctor/auth-token-in-web-storage": "off"
+  }
+}

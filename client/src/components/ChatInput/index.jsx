@@ -4,6 +4,60 @@ import { useAuth } from "../../context/AuthContext.jsx";
 
 const MAX_FILES = 4;
 
+const FileThumbnailItem = memo(({ fileWrapper, onRemove, disabled }) => {
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    const file = fileWrapper.file;
+    if (!file || (!file.type.startsWith("image/") && !file.type.startsWith("video/"))) {
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [fileWrapper.file]);
+
+  return (
+    <div className="group relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-lg border border-border-color bg-dark-third-bg">
+      {preview && fileWrapper.file.type.startsWith("image/") && (
+        <img
+          src={preview}
+          alt={fileWrapper.file.name}
+          className="h-full w-full object-cover"
+        />
+      )}
+      {preview && fileWrapper.file.type.startsWith("video/") && (
+        <video
+          src={preview}
+          muted
+          playsInline
+          className="h-full w-full object-cover"
+        />
+      )}
+      {!preview && (
+        <div className="flex h-full w-full flex-col items-center justify-center p-1">
+          <File size={18} className="text-blue-400" />
+          <span className="mt-1 w-full truncate px-1 text-center text-[9px] text-gray-200">
+            {fileWrapper.file.name}
+          </span>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => onRemove(fileWrapper.id)}
+        disabled={disabled}
+        className="absolute right-1 top-1 z-10 cursor-pointer rounded-full bg-black/70 p-1 text-white opacity-90 transition hover:bg-black"
+        aria-label="Remove file"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+});
+FileThumbnailItem.displayName = "FileThumbnailItem";
+
 function ChatInput({ onSendMessage, disabled = false }) {
   const { authToken, openAuthModal } = useAuth();
   const isAuthenticated = !!authToken;
@@ -12,8 +66,6 @@ function ChatInput({ onSendMessage, disabled = false }) {
   const [files, setFiles] = useState([]);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
-  const filesRef = useRef(files);
-  filesRef.current = files;
 
   // Auto-resize textarea smoothly with content
   const adjustTextareaHeight = useCallback(() => {
@@ -29,15 +81,6 @@ function ChatInput({ onSendMessage, disabled = false }) {
     adjustTextareaHeight();
   }, [text, adjustTextareaHeight]);
 
-  // Clean up object URLs on unmount
-  useEffect(() => {
-    return () => {
-      filesRef.current.forEach((fw) => {
-        if (fw.preview) URL.revokeObjectURL(fw.preview);
-      });
-    };
-  }, []);
-
   const handleChange = (e) => {
     setText(e.target.value);
   };
@@ -47,14 +90,10 @@ function ChatInput({ onSendMessage, disabled = false }) {
     setFiles((prevFiles) => {
       const remainingSlots = MAX_FILES - prevFiles.length;
       if (remainingSlots <= 0) return prevFiles;
-      const filesToAdd = newFiles.slice(0, remainingSlots).map((file) => {
-        const isMedia =
-          file.type.startsWith("image/") || file.type.startsWith("video/");
-        return {
-          file,
-          preview: isMedia ? URL.createObjectURL(file) : null,
-        };
-      });
+      const filesToAdd = newFiles.slice(0, remainingSlots).map((file) => ({
+        id: `${file.name}-${file.lastModified}-${file.size}-${Math.random().toString(36).slice(2, 9)}`,
+        file,
+      }));
       return [...prevFiles, ...filesToAdd];
     });
   }, []);
@@ -86,14 +125,8 @@ function ChatInput({ onSendMessage, disabled = false }) {
     fileInputRef.current?.click();
   };
 
-  const handleRemoveFile = (indexToRemove) => {
-    setFiles((prevFiles) => {
-      const fileToRemove = prevFiles[indexToRemove];
-      if (fileToRemove?.preview) {
-        URL.revokeObjectURL(fileToRemove.preview);
-      }
-      return prevFiles.filter((_, index) => index !== indexToRemove);
-    });
+  const handleRemoveFile = (idToRemove) => {
+    setFiles((prevFiles) => prevFiles.filter((fw) => fw.id !== idToRemove));
   };
 
   const handleSubmit = (e) => {
@@ -108,9 +141,6 @@ function ChatInput({ onSendMessage, disabled = false }) {
     if (trimmed || files.length > 0) {
       onSendMessage({ text: trimmed, files: files.map((fw) => fw.file) });
       setText("");
-      files.forEach((fw) => {
-        if (fw.preview) URL.revokeObjectURL(fw.preview);
-      });
       setFiles([]);
 
       // Reset textarea height to default 1 line
@@ -202,46 +232,13 @@ function ChatInput({ onSendMessage, disabled = false }) {
           {/* File Previews */}
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2 pb-2 pt-1">
-              {files.map((fileWrapper, index) => (
-                <div
-                  key={`${fileWrapper.file.name}-${index}`}
-                  className="group relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-lg border border-border-color bg-dark-third-bg"
-                >
-                  {fileWrapper.preview &&
-                    fileWrapper.file.type.startsWith("image/") && (
-                      <img
-                        src={fileWrapper.preview}
-                        alt={fileWrapper.file.name}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  {fileWrapper.preview &&
-                    fileWrapper.file.type.startsWith("video/") && (
-                      <video
-                        src={fileWrapper.preview}
-                        muted
-                        playsInline
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  {!fileWrapper.preview && (
-                    <div className="flex h-full w-full flex-col items-center justify-center p-1">
-                      <File size={18} className="text-blue-400" />
-                      <span className="mt-1 w-full truncate px-1 text-center text-[9px] text-gray-200">
-                        {fileWrapper.file.name}
-                      </span>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile(index)}
-                    disabled={disabled}
-                    className="absolute right-1 top-1 z-10 cursor-pointer rounded-full bg-black/70 p-1 text-white opacity-90 transition hover:bg-black"
-                    aria-label="Remove file"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
+              {files.map((fileWrapper) => (
+                <FileThumbnailItem
+                  key={fileWrapper.id}
+                  fileWrapper={fileWrapper}
+                  onRemove={handleRemoveFile}
+                  disabled={disabled}
+                />
               ))}
             </div>
           )}

@@ -75,9 +75,11 @@ function ChatWindow({ messages, isLoading, onRegenerate }) {
       <div className="mx-auto w-full max-w-3xl space-y-6">
         {messages?.map((msg, index) => {
           const isLast = index === messages.length - 1;
+          const bubbleKey =
+            msg._id || msg.id || `${msg.role}-${msg.timestamp || "msg"}`;
           return (
             <ChatBubble
-              key={msg._id || `${msg.role}-${index}`}
+              key={bubbleKey}
               message={msg}
               isLastMessage={isLast}
               onRegenerate={isLast ? onRegenerate : undefined}

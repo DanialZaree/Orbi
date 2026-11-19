@@ -290,8 +290,11 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
             : "max-w-[95%] sm:max-w-[90%] px-1 py-1 text-sm sm:text-base text-gray-100"
         }`}
       >
-        {message.content?.map((block, index) => {
-          const key = `${block.type}-${index}`;
+        {message.content?.map((block) => {
+          const key =
+            block.id ||
+            block._id ||
+            `${message._id || "msg"}-${block.type}-${block.fileName || block.language || ""}-${typeof block.value === "string" ? block.value.slice(0, 32) : ""}`;
 
           // Code Block
           if (block.type === "code") {

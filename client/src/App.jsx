@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./context/AuthContext.jsx";
 import apiClient from "./services/api.js";
 import { useLocation, useRoute, Switch, Route } from "wouter";
@@ -49,18 +49,6 @@ export default function App() {
   const [chatHistory, setChatHistory] = useState([]);
   const [chatNotFound, setChatNotFound] = useState(false);
 
-  // Keep track of active object URLs to prevent memory leaks across sessions
-  const activeBlobUrlsRef = useRef(new Set());
-
-  const clearBlobUrls = useCallback(() => {
-    activeBlobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-    activeBlobUrlsRef.current.clear();
-  }, []);
-
-  useEffect(() => {
-    return () => clearBlobUrls();
-  }, [clearBlobUrls]);
-
   // Fetch initial chat list for authenticated users
   useEffect(() => {
     if (!authToken) {
@@ -91,13 +79,16 @@ export default function App() {
       setActiveChatId(chatId);
       setIsLoading(true);
       setChatNotFound(false);
-      clearBlobUrls();
 
       try {
         const response = await apiClient.get(`/chat/${chatId}`);
         const loadedMessages = (response.data.chat?.messages || []).map((msg) => ({
           ...msg,
           _id: msg._id || generateId(),
+          content: (msg.content || []).map((b, i) => ({
+            ...b,
+            id: b.id || b._id || `${msg._id || "msg"}-blk-${i}`,
+          })),
         }));
         setMessages(loadedMessages);
       } catch (error) {
@@ -108,7 +99,7 @@ export default function App() {
         setIsLoading(false);
       }
     },
-    [clearBlobUrls],
+    [],
   );
 
   // Sync route param with activeChatId
@@ -133,12 +124,11 @@ export default function App() {
   }, [match, params?.chatId, activeChatId, handleSelectChat]);
 
   const handleNewChat = useCallback(() => {
-    clearBlobUrls();
     setActiveChatId(null);
     setMessages([]);
     setChatNotFound(false);
     setLocation("/");
-  }, [clearBlobUrls, setLocation]);
+  }, [setLocation]);
 
   // Handle regenerating the last AI response
   const handleRegenerate = useCallback(async () => {
@@ -181,7 +171,10 @@ export default function App() {
       const botMessage = {
         _id: generateId(),
         role: "assistant",
-        content: response.data.response,
+        content: (response.data.response || []).map((b, i) => ({
+          ...b,
+          id: b.id || b._id || `bot-blk-${Date.now()}-${i}`,
+        })),
         animate: true,
       };
 
@@ -194,7 +187,7 @@ export default function App() {
         {
           _id: generateId(),
           role: "assistant",
-          content: [{ type: "text", value: "Failed to regenerate response. Please try again." }],
+          content: [{ id: `err-${Date.now()}`, type: "text", value: "Failed to regenerate response. Please try again." }],
           animate: true,
         },
       ]);
@@ -206,25 +199,29 @@ export default function App() {
   // Handle sending a new message with text and optional files
   const handleSendMessage = useCallback(
     async ({ text, files = [] }) => {
-      const filePreviews = files.map((file) => {
-        let type = "file";
-        if (file.type.startsWith("image/")) type = "image";
-        if (file.type.startsWith("video/")) type = "video";
+      const filePreviews = await Promise.all(
+        files.map(async (file, idx) => {
+          let type = "file";
+          if (file.type.startsWith("image/")) type = "image";
+          if (file.type.startsWith("video/")) type = "video";
 
-        const previewUrl = URL.createObjectURL(file);
-        activeBlobUrlsRef.current.add(previewUrl);
+          const dataUri = await fileToDataUri(file);
 
-        return {
-          type,
-          value: previewUrl,
-          fileName: file.name,
-        };
-      });
+          return {
+            id: `usr-file-${Date.now()}-${idx}`,
+            type,
+            value: dataUri,
+            fileName: file.name,
+          };
+        }),
+      );
 
       // Assemble unified user message matching server schema
       const userContent = [
         ...filePreviews,
-        ...(text.trim() ? [{ type: "text", value: text }] : []),
+        ...(text.trim()
+          ? [{ id: `usr-txt-${Date.now()}`, type: "text", value: text }]
+          : []),
       ];
 
       if (userContent.length === 0) return;
@@ -278,7 +275,10 @@ export default function App() {
         const botMessage = {
           _id: generateId(),
           role: "assistant",
-          content: response.data.response,
+          content: (response.data.response || []).map((b, i) => ({
+            ...b,
+            id: b.id || b._id || `bot-blk-${Date.now()}-${i}`,
+          })),
           animate: true,
         };
 
@@ -293,7 +293,7 @@ export default function App() {
         const errorMessage = {
           _id: generateId(),
           role: "assistant",
-          content: [{ type: "text", value: errorText }],
+          content: [{ id: `err-${Date.now()}`, type: "text", value: errorText }],
           animate: true,
         };
         setMessages((prev) => [...prev, errorMessage]);

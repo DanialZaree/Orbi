@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CodeQL & Workflow Hardening**:
   - Remediated CodeQL polynomial regular expression denial-of-service (ReDoS) alerts (#30, #31, #32) in `server/controllers/authController.js` by replacing backtracking regex with linear $O(n)$ parser `isValidEmail` enforcing RFC 5321 limits.
   - Resolved CodeQL workflow permissions alert (#33) in `.github/workflows/ci.yml` by enforcing least-privilege `permissions: contents: read`.
+- **React Doctor & UI Lifecycle Hardening**:
+  - Eliminated unrevoked object URL memory leaks (`no-create-object-url-without-revoke`) in `client/src/App.jsx` by adopting direct base64 data URIs for optimistic media rendering.
+  - Extracted `FileThumbnailItem` in `client/src/components/ChatInput/index.jsx` with isolated `useEffect` cleanup ensuring immediate and deterministic revocation of object URLs upon file removal or unmount.
+  - Replaced array index keys (`no-array-index-as-key`) across `ChatBubble`, `ChatInput`, and `ChatWindow` with stable block and message IDs.
+  - Isolated web storage in `client/src/context/AuthContext.jsx` behind `authStorage` abstraction and configured `doctor.config.json`.
 - **NoSQL Injection Prevention**:
   - Enforced strict string type checks and email regex validation across all authentication endpoints (`loginWithEmail`, `requestEmailOTP`, `verifyEmailAndRegister`).
   - Added string type checks and length constraints on chat titles and messages.
