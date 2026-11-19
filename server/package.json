@@ -16,7 +16,7 @@
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^18.0.10",
     "express": "^5.2.1",
     "express-rate-limit": "^7.5.1",
     "google-auth-library": "^10.5.0",
