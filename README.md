@@ -24,6 +24,12 @@ Orbi is a modern full-stack AI assistant with multi-modal conversational support
 
 ---
 
+## Demo Video
+
+https://github.com/user-attachments/assets/3ba4087f-4c9d-497d-96dd-23cfacf1a161
+
+---
+
 ## Tech Stack
 
 | Layer | Technologies |
