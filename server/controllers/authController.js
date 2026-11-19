@@ -4,6 +4,7 @@ const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
+const { isValidEmail } = require("../utils/validators");
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -15,7 +16,6 @@ const client = new OAuth2Client(
   "postmessage",
 );
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_OTP_ATTEMPTS = 5;
 
 // Helpers
@@ -108,7 +108,7 @@ exports.getCurrentUser = async (req, res) => {
 exports.requestEmailOTP = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email || typeof email !== "string" || !EMAIL_REGEX.test(email.trim())) {
+    if (!isValidEmail(email)) {
       return res
         .status(400)
         .json({ success: false, message: "Please provide a valid email address." });
@@ -207,7 +207,7 @@ exports.verifyEmailAndRegister = async (req, res) => {
       });
     }
 
-    if (!EMAIL_REGEX.test(email.trim())) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid email address.",
@@ -311,7 +311,7 @@ exports.loginWithEmail = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    if (!EMAIL_REGEX.test(normalizedEmail)) {
+    if (!isValidEmail(normalizedEmail)) {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid email address.",

@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed committed 8MB `server.zip` archive containing unencrypted production `.env` secrets.
   - Sanitized `client/.env` by removing backend credentials (`VITE_MONGO_URI`, `VITE_GEMINI_API_KEY`, `VITE_JWT_SECRET`) which were being bundled into public client assets.
   - Added archive extensions (`*.zip`, `*.tar`, `*.tgz`) to root `.gitignore`.
+- **CodeQL & Workflow Hardening**:
+  - Remediated CodeQL polynomial regular expression denial-of-service (ReDoS) alerts (#30, #31, #32) in `server/controllers/authController.js` by replacing backtracking regex with linear $O(n)$ parser `isValidEmail` enforcing RFC 5321 limits.
+  - Resolved CodeQL workflow permissions alert (#33) in `.github/workflows/ci.yml` by enforcing least-privilege `permissions: contents: read`.
 - **NoSQL Injection Prevention**:
   - Enforced strict string type checks and email regex validation across all authentication endpoints (`loginWithEmail`, `requestEmailOTP`, `verifyEmailAndRegister`).
   - Added string type checks and length constraints on chat titles and messages.
