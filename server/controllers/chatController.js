@@ -266,9 +266,12 @@ exports.sendMessage = async (req, res) => {
         message: "AI rate limit reached. Please wait a moment before trying again.",
       });
     }
+    const isProduction = process.env.NODE_ENV === "production";
     res.status(500).json({
       success: false,
-      message: error.message || "Error communicating with the AI.",
+      message: isProduction
+        ? "Error communicating with the AI."
+        : error.message || "Error communicating with the AI.",
     });
   }
 };

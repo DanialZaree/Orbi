@@ -82,14 +82,17 @@ export default function App() {
 
       try {
         const response = await apiClient.get(`/chat/${chatId}`);
-        const loadedMessages = (response.data.chat?.messages || []).map((msg) => ({
-          ...msg,
-          _id: msg._id || generateId(),
-          content: (msg.content || []).map((b, i) => ({
-            ...b,
-            id: b.id || b._id || `${msg._id || "msg"}-blk-${i}`,
-          })),
-        }));
+        const loadedMessages = (response.data.chat?.messages || []).map((msg) => {
+          const msgId = msg._id || generateId();
+          return {
+            ...msg,
+            _id: msgId,
+            content: (msg.content || []).map((b, i) => ({
+              ...b,
+              id: b.id || b._id || `${msgId}-blk-${i}`,
+            })),
+          };
+        });
         setMessages(loadedMessages);
       } catch (error) {
         console.error("Failed to fetch chat messages:", error);
@@ -199,59 +202,53 @@ export default function App() {
   // Handle sending a new message with text and optional files
   const handleSendMessage = useCallback(
     async ({ text, files = [] }) => {
-      const filePreviews = await Promise.all(
-        files.map(async (file, idx) => {
-          let type = "file";
-          if (file.type.startsWith("image/")) type = "image";
-          if (file.type.startsWith("video/")) type = "video";
+      if (!text.trim() && files.length === 0) return;
 
-          const dataUri = await fileToDataUri(file);
-
-          return {
-            id: `usr-file-${Date.now()}-${idx}`,
-            type,
-            value: dataUri,
-            fileName: file.name,
-          };
-        }),
-      );
-
-      // Assemble unified user message matching server schema
-      const userContent = [
-        ...filePreviews,
-        ...(text.trim()
-          ? [{ id: `usr-txt-${Date.now()}`, type: "text", value: text }]
-          : []),
-      ];
-
-      if (userContent.length === 0) return;
-
-      const optimisticUserMessage = {
-        _id: generateId(),
-        role: "user",
-        content: userContent,
-      };
-
-      setMessages((prev) => [...prev, optimisticUserMessage]);
       setIsLoading(true);
 
       try {
-        const imageFiles = files.filter((f) => f.type.startsWith("image/"));
-        const videoFiles = files.filter((f) => f.type.startsWith("video/"));
-        const docFiles = files.filter(
-          (f) => !f.type.startsWith("image/") && !f.type.startsWith("video/"),
+        const convertedFiles = await Promise.all(
+          files.map(async (file, idx) => {
+            let type = "file";
+            if (file.type.startsWith("image/")) type = "image";
+            if (file.type.startsWith("video/")) type = "video";
+
+            const dataUri = await fileToDataUri(file);
+
+            return {
+              id: `usr-file-${Date.now()}-${idx}`,
+              type,
+              value: dataUri,
+              fileName: file.name,
+            };
+          }),
         );
 
-        const [imageDataUris, videoDataUris, docDataObjs] = await Promise.all([
-          Promise.all(imageFiles.map(fileToDataUri)),
-          Promise.all(videoFiles.map(fileToDataUri)),
-          Promise.all(
-            docFiles.map(async (file) => ({
-              name: file.name,
-              value: await fileToDataUri(file),
-            })),
-          ),
-        ]);
+        // Assemble unified user message matching server schema
+        const userContent = [
+          ...convertedFiles,
+          ...(text.trim()
+            ? [{ id: `usr-txt-${Date.now()}`, type: "text", value: text }]
+            : []),
+        ];
+
+        const optimisticUserMessage = {
+          _id: generateId(),
+          role: "user",
+          content: userContent,
+        };
+
+        setMessages((prev) => [...prev, optimisticUserMessage]);
+
+        const imageDataUris = convertedFiles
+          .filter((f) => f.type === "image")
+          .map((f) => f.value);
+        const videoDataUris = convertedFiles
+          .filter((f) => f.type === "video")
+          .map((f) => f.value);
+        const docDataObjs = convertedFiles
+          .filter((f) => f.type === "file")
+          .map((f) => ({ name: f.fileName, value: f.value }));
 
         const response = await apiClient.post("/chat", {
           message: text,

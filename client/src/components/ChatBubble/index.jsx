@@ -294,7 +294,7 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
           const key =
             block.id ||
             block._id ||
-            `${message._id || "msg"}-${block.type}-${block.fileName || block.language || ""}-${typeof block.value === "string" ? block.value.slice(0, 32) : ""}`;
+            `${message._id || "msg"}-${block.type}-${block.fileName || block.language || ""}-${typeof block.value === "string" ? `${block.value.length}-${block.value.slice(0, 32)}` : ""}`;
 
           // Code Block
           if (block.type === "code") {
