@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first nodemon server.js",
+    "lint": "eslint .",
     "test": "node --test utils/*.test.js"
   },
   "engines": {
@@ -24,7 +25,10 @@
     "resend": "^6.2.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "cross-env": "^10.1.0",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
     "nodemon": "^3.1.10"
   }
 }

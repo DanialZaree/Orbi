@@ -22,13 +22,14 @@ const SignInForm = ({
 
   return (
     <div className="bg-dark-secondary-bg border-border-color bg-surface animate-fade-in relative w-full max-w-md rounded-2xl border p-8">
-      <div
+      <button
+        type="button"
         onClick={toggleModal}
         className="text-secondary-text absolute top-4 right-4 cursor-pointer hover:text-white"
-        aria-label="close login form"
+        aria-label="Close sign in form"
       >
         <X size={20} />
-      </div>
+      </button>
       <h2 className="mb-6 text-center text-2xl font-bold text-white">Sign In</h2>
 
       {/* --- Google Button --- */}
@@ -95,7 +96,8 @@ const SignInForm = ({
           </label>
           <button
             type="button"
-            onClick={toggleShowPassword} // Use toggle from props
+            onClick={toggleShowPassword}
+            aria-label={showPassword ? "Hide password" : "Show password"}
             className="text-secondary-text absolute top-7/10 right-4 z-10 -translate-y-1/2 cursor-pointer"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

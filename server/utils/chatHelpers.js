@@ -15,7 +15,7 @@ function parseDataUri(dataUri) {
   if (!prefix.endsWith(";base64")) return null;
 
   const mimeType = prefix.slice(5, -7).trim();
-  if (!/^[a-zA-Z0-9\/+.-]+$/.test(mimeType)) return null;
+  if (!/^[a-zA-Z0-9/+.-]+$/.test(mimeType)) return null;
 
   const data = dataUri.slice(commaIdx + 1).trim();
   if (!data) return null;

@@ -28,6 +28,24 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "wouter"],
+          "vendor-markdown": [
+            "react-markdown",
+            "remark-gfm",
+            "remark-math",
+            "rehype-katex",
+            "rehype-external-links",
+          ],
+          "vendor-icons": ["lucide-react", "react-icons"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
   test: {
     environment: "jsdom",
     globals: true,

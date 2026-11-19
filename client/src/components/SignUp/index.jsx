@@ -96,6 +96,7 @@ const SignUpForm = ({
         <button
           type="button"
           onClick={toggleShowPassword}
+          aria-label={showPassword ? "Hide password" : "Show password"}
           className="text-secondary-text absolute top-7/10 right-4 z-10 -translate-y-1/2 cursor-pointer"
         >
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -120,6 +121,7 @@ const SignUpForm = ({
         <button
           type="button"
           onClick={toggleShowConfirmPassword}
+          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
           className="text-secondary-text absolute top-7/10 right-4 z-10 -translate-y-1/2 cursor-pointer"
         >
           {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
