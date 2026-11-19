@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Lint, Test, Audit, and Build
+    name: Lint, Test, Audit, and Build (${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,15 +27,21 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
 
       - name: Install Root Dependencies
         run: npm ci
 
       - name: Install Client Dependencies
-        run: npm ci --prefix client
+        working-directory: client
+        run: npm ci
 
       - name: Install Server Dependencies
-        run: npm ci --prefix server
+        working-directory: server
+        run: npm ci
 
       - name: Run Linters
         run: npm run lint
