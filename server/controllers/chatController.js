@@ -59,8 +59,28 @@ const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 exports.sendMessage = async (req, res) => {
   try {
-    const { message = "", chatId, images = [], videos = [], documents = [], skipUserSave } = req.body;
+    const rawMessage = req.body.message;
+    const message = typeof rawMessage === "string" ? rawMessage : "";
+    const chatId = req.body.chatId;
+    const images = Array.isArray(req.body.images)
+      ? req.body.images.filter((img) => typeof img === "string")
+      : [];
+    const videos = Array.isArray(req.body.videos)
+      ? req.body.videos.filter((vid) => typeof vid === "string")
+      : [];
+    const documents = Array.isArray(req.body.documents)
+      ? req.body.documents.filter((doc) => doc && typeof doc.value === "string")
+      : [];
+    const skipUserSave = Boolean(req.body.skipUserSave);
     const userId = req.user._id.toString();
+
+    // Guard against excessive attachment count
+    if (images.length + videos.length + documents.length > 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum 10 attachments allowed per message.",
+      });
+    }
 
     if (!message.trim() && !images.length && !videos.length && !documents.length) {
       return res.status(400).json({ success: false, message: "Cannot send an empty message." });
@@ -295,16 +315,17 @@ exports.renameChatById = async (req, res) => {
     const { newTitle } = req.body;
     const userId = req.user._id.toString();
 
-    if (!newTitle || !newTitle.trim()) {
-      return res.status(400).json({ success: false, message: "New title cannot be empty." });
+    if (!newTitle || typeof newTitle !== "string" || !newTitle.trim()) {
+      return res.status(400).json({ success: false, message: "New title must be a non-empty string." });
     }
+    const cleanTitle = newTitle.trim().slice(0, 100);
     if (!isValidId(chatId)) {
       return res.status(400).json({ success: false, message: "Invalid chat ID format." });
     }
 
     const updatedChat = await Chat.findOneAndUpdate(
       { _id: chatId, userId },
-      { $set: { title: newTitle.trim() } },
+      { $set: { title: cleanTitle } },
       { new: true }
     ).select("_id title").lean();
 

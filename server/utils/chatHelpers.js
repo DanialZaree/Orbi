@@ -6,19 +6,39 @@ const MAX_HISTORY_MESSAGES = 20;
  * @param {string} dataUri
  * @returns {object|null}
  */
+function parseDataUri(dataUri) {
+  if (!dataUri || typeof dataUri !== "string" || !dataUri.startsWith("data:")) return null;
+  const commaIdx = dataUri.indexOf(",");
+  if (commaIdx === -1 || commaIdx > 250) return null;
+
+  const prefix = dataUri.slice(0, commaIdx);
+  if (!prefix.endsWith(";base64")) return null;
+
+  const mimeType = prefix.slice(5, -7).trim();
+  if (!/^[a-zA-Z0-9\/+.-]+$/.test(mimeType)) return null;
+
+  const data = dataUri.slice(commaIdx + 1).trim();
+  if (!data) return null;
+
+  return { mimeType, data };
+}
+
+/**
+ * Helper to convert Base64 data URI to a Gemini Part object
+ * Supports images and videos
+ * @param {string} dataUri
+ * @returns {object|null}
+ */
 function dataUriToGenerativePart(dataUri) {
-  if (!dataUri || typeof dataUri !== "string") return null;
   try {
-    const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=\s]+)$/
-    );
-    if (!match) {
+    const parsed = parseDataUri(dataUri);
+    if (!parsed) {
       throw new Error("Invalid data URI format");
     }
-    return { inlineData: { data: match[2].trim(), mimeType: match[1] } };
+    return { inlineData: { data: parsed.data, mimeType: parsed.mimeType } };
   } catch (error) {
     console.error("Failed to parse data URI:", error.message);
-    return null; // Return null to be filtered out
+    return null;
   }
 }
 
@@ -47,13 +67,10 @@ function isTextMime(mimeType) {
  */
 function processFilePart(dataUri, fileName = "unknown") {
   try {
-    const match = dataUri.match(
-      /^data:([a-zA-Z0-9\/+.-]+);base64,([a-zA-Z0-9+/=]+)$/
-    );
-    if (!match) return null;
+    const parsed = parseDataUri(dataUri);
+    if (!parsed) return null;
 
-    const mimeType = match[1];
-    const base64Data = match[2];
+    const { mimeType, data: base64Data } = parsed;
 
     if (isTextMime(mimeType)) {
       const textContent = Buffer.from(base64Data, "base64").toString("utf-8");

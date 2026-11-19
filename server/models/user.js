@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
+      trim: true,
     },
     password: {
       type: String,
@@ -30,6 +31,10 @@ const userSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
     },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
     googleId: {
       type: String,
       unique: true,
@@ -37,6 +42,8 @@ const userSchema = new mongoose.Schema(
     },
     displayName: {
       type: String,
+      trim: true,
+      maxlength: 100,
     },
     profilePicture: {
       type: String,
