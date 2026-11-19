@@ -1,0 +1,53 @@
+name: CI / Security & Build Pipeline
+
+on:
+  push:
+    branches: [main, "modernize/**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, Test, Audit, and Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Install Client Dependencies
+        run: npm ci --prefix client
+
+      - name: Install Server Dependencies
+        run: npm ci --prefix server
+
+      - name: Run Linters
+        run: npm run lint
+
+      - name: Run Test Suites (Client & Server)
+        run: npm test
+
+      - name: Build Frontend Application
+        run: npm run build
+
+      - name: Dependency Security Audit
+        run: |
+          npm audit --audit-level=high
+          npm audit --prefix server --audit-level=high
+          npm audit --prefix client --audit-level=high
