@@ -33,15 +33,15 @@ jobs:
             server/package-lock.json
 
       - name: Install Root Dependencies
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Install Client Dependencies
         working-directory: client
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Install Server Dependencies
         working-directory: server
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Run Linters
         run: npm run lint
