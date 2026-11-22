@@ -115,7 +115,13 @@ pre::-webkit-scrollbar-thumb {
   }
 }
 details {
-  direction: ltr !important;
+  direction: ltr;
+}
+.plaintext-bidi,
+.plaintext-bidi .shiki,
+.plaintext-bidi .shiki .line {
+  unicode-bidi: plaintext;
+  text-align: start;
 }
 /* Shiki base styles */
 .shiki {
@@ -179,13 +185,13 @@ details {
   margin-top: 1em;
   margin-bottom: 1em;
   list-style: none !important;
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .prose ol > li {
   position: relative;
   counter-increment: list-counter;
-  padding-left: 1.75em;
+  padding-inline-start: 1.75em;
   list-style: none !important;
 }
 
@@ -196,21 +202,21 @@ details {
 .prose ol > li::before {
   content: counter(list-counter) ".";
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   font-weight: 500;
   color: theme("colors.secondary-text");
 }
 
 .prose ul {
   list-style: none !important;
-  padding-left: 0;
+  padding-inline-start: 0;
   margin-top: 1em;
   margin-bottom: 1em;
 }
 
 .prose ul > li {
   position: relative;
-  padding-left: 1.5em;
+  padding-inline-start: 1.5em;
   list-style: none !important;
 }
 
@@ -226,7 +232,7 @@ details {
   width: 0.375em;
   height: 0.375em;
   top: calc(0.875em - 0.1875em);
-  left: 0.25em;
+  inset-inline-start: 0.25em;
 }
 
 .prose hr {
@@ -240,12 +246,12 @@ details {
   font-weight: 500;
   font-style: italic;
   color: theme("colors.gray.400");
-  border-left-width: 0.25rem;
-  border-left-color: theme("colors.border-color");
+  border-inline-start-width: 0.25rem;
+  border-inline-start-color: theme("colors.border-color");
   quotes: "\201C" "\201D" "\2018" "\2019";
   margin-top: 1.6em;
   margin-bottom: 1.6em;
-  padding-left: 1em;
+  padding-inline-start: 1em;
 }
 
 .prose blockquote p:first-of-type::before {
@@ -332,7 +338,7 @@ details {
 .prose table {
   width: 100%;
   table-layout: auto;
-  text-align: left;
+  text-align: start;
   margin-top: 2em;
   margin-bottom: 2em;
   font-size: 0.875em;

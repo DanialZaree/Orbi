@@ -16,8 +16,6 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-const isRTL = (text) => /[\u0600-\u06FF]/.test(text);
-
 const NORMALIZE_LANG_MAP = {
   js: "javascript",
   ts: "typescript",
@@ -103,6 +101,7 @@ const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang = "plaintext" }
   return (
     <details
       open
+      dir="ltr"
       className="border-border-color group my-3.5 w-full max-w-full overflow-hidden rounded-xl border bg-[#1a1b26] shadow-md"
     >
       <summary className="border-border-color flex items-center justify-between border-b bg-[#14151f] px-3.5 py-2 select-none cursor-pointer">
@@ -125,7 +124,12 @@ const ShikiCodeBlock = memo(function ShikiCodeBlock({ code, lang = "plaintext" }
           {isCopied ? "Copied!" : "Copy"}
         </button>
       </summary>
-      <div className="relative max-w-full overflow-x-auto p-3.5 text-xs sm:text-sm font-mono leading-relaxed">
+      <div
+        dir={normalizedLang === "plaintext" ? "auto" : "ltr"}
+        className={`relative max-w-full overflow-x-auto p-3.5 text-xs sm:text-sm font-mono leading-relaxed${
+          normalizedLang === "plaintext" ? " plaintext-bidi" : ""
+        }`}
+      >
         {htmlBlock ? (
           <div dangerouslySetInnerHTML={{ __html: htmlBlock }} />
         ) : (
@@ -147,8 +151,19 @@ const MARKDOWN_COMPONENTS = {
     ) {
       return <div className="my-4 flex justify-center overflow-x-auto py-1">{children}</div>;
     }
-    return <p className="my-2.5 first:mt-0 last:mb-0 leading-relaxed break-words">{children}</p>;
+    return (
+      <p dir="auto" className="my-2.5 first:mt-0 last:mb-0 leading-relaxed break-words">
+        {children}
+      </p>
+    );
   },
+  h1: (props) => <h1 {...props} dir="auto" />,
+  h2: (props) => <h2 {...props} dir="auto" />,
+  h3: (props) => <h3 {...props} dir="auto" />,
+  h4: (props) => <h4 {...props} dir="auto" />,
+  h5: (props) => <h5 {...props} dir="auto" />,
+  h6: (props) => <h6 {...props} dir="auto" />,
+  blockquote: (props) => <blockquote {...props} dir="auto" />,
   a: (props) => (
     <a
       {...props}
@@ -159,9 +174,9 @@ const MARKDOWN_COMPONENTS = {
       {props.children} <LinkIcon size={12} className="inline-block shrink-0" />
     </a>
   ),
-  ul: (props) => <ul {...props} className="my-2.5 list-none pl-0 space-y-1.5" />,
-  ol: (props) => <ol {...props} className="my-2.5 list-none pl-0 space-y-1.5" />,
-  li: (props) => <li {...props} className="relative leading-relaxed" />,
+  ul: (props) => <ul {...props} dir="auto" className="my-2.5 list-none ps-0 space-y-1.5" />,
+  ol: (props) => <ol {...props} dir="auto" className="my-2.5 list-none ps-0 space-y-1.5" />,
+  li: (props) => <li {...props} dir="auto" className="relative leading-relaxed" />,
   code({ inline, className, children, ...props }) {
     const match = /language-([^\s]+)/.exec(className || "");
     const codeString = String(children || "").replace(/\n$/, "");
@@ -175,6 +190,7 @@ const MARKDOWN_COMPONENTS = {
     }
     return (
       <code
+        dir="ltr"
         className="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-xs font-medium text-blue-300 break-words"
         {...props}
       >
@@ -187,7 +203,7 @@ const MARKDOWN_COMPONENTS = {
   },
   table: (props) => (
     <div className="border-border-color my-4 max-w-full overflow-x-auto rounded-lg border">
-      <table {...props} className="min-w-full divide-y divide-border-color text-left text-sm" />
+      <table {...props} dir="auto" className="min-w-full divide-y divide-border-color text-start text-sm" />
     </div>
   ),
 };
@@ -229,6 +245,7 @@ const Typewriter = memo(function Typewriter({ text, speed = 10 }) {
   if (!isFinished) {
     return (
       <div
+        dir="auto"
         onClick={handleSkip}
         className="cursor-pointer whitespace-pre-wrap leading-relaxed break-words font-sans min-h-[1.5em]"
         title="Click to display full message"
@@ -360,12 +377,11 @@ function ChatBubble({ message, isLastMessage, onRegenerate }) {
 
           // Text Block
           if (typeof block.value === "string" && block.value.trim() !== "") {
-            const isRtlText = isRTL(block.value);
             return (
               <div
                 key={key}
                 className="prose-sm prose prose-invert max-w-none [overflow-wrap:anywhere]"
-                dir={isRtlText ? "rtl" : "ltr"}
+                dir="auto"
               >
                 {!isUser && isLastMessage && message.animate ? (
                   <Typewriter text={block.value} speed={10} />

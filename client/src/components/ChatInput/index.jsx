@@ -252,6 +252,7 @@ function ChatInput({ onSendMessage, disabled = false }) {
             <textarea
               ref={textareaRef}
               rows={1}
+              dir="auto"
               value={text}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
