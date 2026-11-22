@@ -119,6 +119,21 @@ const SignInForm = ({
         >
           {isLoading && email ? "Signing In..." : "Sign In"}
         </button>
+
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-secondary-text">
+          By signing in, you agree to our{" "}
+          <button
+            type="button"
+            onClick={() => {
+              toggleModal();
+              setLocation("/privacy");
+            }}
+            className="text-blue-400 hover:underline cursor-pointer font-medium"
+          >
+            Privacy Policy
+          </button>
+          .
+        </p>
       </form>
 
       <div className="mt-4 space-x-1 text-center">
@@ -126,24 +141,11 @@ const SignInForm = ({
           Don&apos;t have an account?
         </span>
         <button
+          type="button"
           onClick={() => switchTo("signUp")}
           className="cursor-pointer text-sm font-bold text-blue-500 hover:underline"
         >
           Sign Up
-        </button>
-      </div>
-
-      {/* Privacy Policy Footer Link */}
-      <div className="mt-4 flex items-center justify-center text-xs text-secondary-text border-t border-border-color/60 pt-3">
-        <button
-          type="button"
-          onClick={() => {
-            toggleModal();
-            setLocation("/privacy");
-          }}
-          className="hover:text-white transition-colors cursor-pointer"
-        >
-          Privacy Policy
         </button>
       </div>
     </div>
