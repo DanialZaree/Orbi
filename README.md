@@ -109,14 +109,14 @@ cp server/.env.example server/.env
 | Variable | Description | Example / Default |
 | --- | --- | --- |
 | `PORT` | Server listening port | `5000` |
-| `CLIENT_URL` | Frontend origin for CORS | `http://localhost:5173` |
+| `CLIENT_URL` | Frontend origin for CORS | `https://chat.orbiai.ir` |
 | `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/orbi` |
 | `GEMINI_API_KEY` | Google Gemini API Key | `AIzaSy...` |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web Client ID | `123456...apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET`| Google OAuth Client Secret | `GOCSPX-...` |
 | `JWT_SECRET` | Secret key for signing JWTs (min 32 chars) | `your_secure_random_string` |
 | `RESEND_API_KEY` | Resend API key for OTP emails | `re_...` |
-| `EMAIL_FROM` | Sender display name and address | `"Orbi" <support@orbiai.ir>` |
+| `EMAIL_FROM` | Sender display name and address | `"Orbi <support@orbiai.ir>"` |
 
 ### 2. Client Environment (`client/.env`)
 
@@ -128,7 +128,7 @@ cp client/.env.example client/.env
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | Backend base URL (leave empty in dev to use Vite proxy) | `http://localhost:5000/api` |
+| `VITE_API_BASE_URL` | Backend base URL (leave empty in dev for Vite proxy) | `https://orbiai.ir/api` |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID for sign-in button | `123456...apps.googleusercontent.com` |
 
 > [!WARNING]

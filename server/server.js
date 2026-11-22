@@ -19,9 +19,10 @@ app.use(securityHeaders);
 
 // Allowed CORS origins
 const allowedOrigins = [
-  process.env.CLIENT_URL,
-  "https://orbi-nine.vercel.app",
+  process.env.CLIENT_URL?.replace(/\/+$/, ""),
+  "https://chat.orbiai.ir",
   "https://orbiai.ir",
+  "https://orbi-nine.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000",
 ].filter(Boolean);
