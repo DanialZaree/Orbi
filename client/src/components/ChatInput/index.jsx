@@ -260,8 +260,8 @@ function ChatInput({ onSendMessage, disabled = false }) {
                 disabled
                   ? "Orbi is thinking..."
                   : isAuthenticated
-                  ? "Ask Orbi anything... (Shift+Enter for new line)"
-                  : "Ask Orbi... (Sign in to chat)"
+                  ? "Ask Orbi..."
+                  : "Sign in to ask Orbi..."
               }
               className="placeholder:text-secondary-text max-h-[180px] w-full resize-none bg-transparent py-2 text-sm leading-normal text-white focus:outline-none disabled:cursor-not-allowed"
               id="chat-input"
