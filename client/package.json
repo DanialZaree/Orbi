@@ -14,7 +14,7 @@
     "@react-oauth/google": "^0.12.2",
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
-    "input-otp": "^1.4.2",
+    "input-otp": "^1.5.0",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
