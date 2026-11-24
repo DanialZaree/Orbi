@@ -22,7 +22,7 @@
     "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.24.10",
-    "resend": "^6.18.1"
+    "resend": "^6.39.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
